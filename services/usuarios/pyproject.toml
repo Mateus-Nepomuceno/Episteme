@@ -1,0 +1,61 @@
+[project]
+name = 'usuarios'
+version = '0.1.0'
+description = 'Sistema acadêmico'
+authors = [
+    {name = 'Luiza Moraes de Souza Bittencourt',email = 'lzbttc@gmail.com'},
+    {name = 'Marta Gisele Matos Dantas Barreto',email = 'martagiselebarreto@gmail.com'},
+    {name = 'Mateus Nepomuceno de Paula Santos',email = 'mateusnepomuceno2000@gmail.com'},
+    {name = 'Pedro Luiz Figueiredo Fontes',email = 'plffontes@gmail.com'},
+    {name = 'Tiago Correia Bispo',email = 'tiago.correia.engsoft@gmail.com'},
+]
+readme = 'README.md'
+requires-python = '>=3.12,<4.0'
+dependencies = [
+    'fastapi[standard] (>=0.141.1,<0.142.0)'
+]
+
+[build-system]
+requires = ['poetry-core>=2.0.0,<3.0.0']
+build-backend = 'poetry.core.masonry.api'
+
+[dependency-groups]
+dev = [
+    'pytest (>=9.1.1,<10.0.0)',
+    'pytest-cov (>=7.1.0,<8.0.0)',
+    'ruff (>=0.16.8,<0.17.0)',
+    'typos (>=1.50.2,<2.0.0)',
+    'httpx2 (>=2.13.0,<3.0.0)'
+]
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.pytest]
+pythonpath = ['.']
+addopts = ['-p', 'no:warnings', '--cov=usuarios', '--cov-context=test']
+
+[tool.typos.files]
+extend-exclude = ['*.md', 'migrations']
+
+[tool.poe.tasks]
+lint = { cmd = 'ruff check' }
+format.sequence = [
+  { cmd = 'ruff check --fix' },
+  { cmd = 'ruff format' },
+]
+serve = 'fastapi dev usuarios/app.py'
+test.sequence = [
+  'lint',
+  { cmd = 'pytest -s -x -vv $POE_EXTRA_ARGS' },
+  { cmd = 'coverage html --show-contexts' },
+]
