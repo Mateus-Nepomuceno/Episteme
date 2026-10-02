@@ -1,5 +1,5 @@
 [project]
-name = 'usuarios'
+name = 'identidade'
 version = '0.1.0'
 description = 'Sistema acadêmico'
 authors = [
@@ -48,7 +48,7 @@ quote-style = 'single'
 
 [tool.pytest]
 pythonpath = ['.']
-addopts = ['-p', 'no:warnings', '--cov=usuarios', '--cov-context=test', '--cov-branch']
+addopts = ['-p', 'no:warnings', '--cov=identidade', '--cov-context=test', '--cov-branch']
 
 [tool.typos.files]
 extend-exclude = ['*.md', 'migrations']
@@ -59,7 +59,7 @@ format.sequence = [
   { cmd = 'ruff check --fix' },
   { cmd = 'ruff format' },
 ]
-serve = 'fastapi dev usuarios/app.py'
+serve = 'fastapi dev identidade/app.py'
 test.sequence = [
   'lint',
   { cmd = 'pytest -s -x -vv $POE_EXTRA_ARGS' },
