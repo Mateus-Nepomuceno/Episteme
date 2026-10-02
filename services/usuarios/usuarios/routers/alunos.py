@@ -2,18 +2,25 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from usuarios.database import get_session
-from usuarios.models import Usuario, Aluno
-from usuarios.schemas import AlunoCreate, AlunoList, AlunoPublic, Mensagem, FiltroPaginacao
-from usuarios.security import ( 
-    get_password_hash,
+from usuarios.models import Aluno, Usuario
+from usuarios.schemas import (
+    AlunoCreate,
+    AlunoList,
+    AlunoPublic,
+    FiltroPaginacao,
+    Mensagem,
+)
+from usuarios.security import (
     get_current_user,
+    get_password_hash,
 )
 
 router = APIRouter(prefix='/alunos', tags=['alunos'])
+
 
 @router.post(
     '/', status_code=HTTPStatus.CREATED, response_model=AlunoPublic
@@ -37,11 +44,10 @@ def create_aluno(aluno: AlunoCreate, session: Session = Depends(get_session)):
         cpf=aluno.cpf,
         telefone=aluno.telefone,
         senha=get_password_hash(aluno.senha),
-        tipo=aluno.tipo,
         matricula_id=aluno.matricula_id,
         curso_id=aluno.curso_id,
     )
-    
+
     session.add(db_aluno)
     session.commit()
     session.refresh(db_aluno)
@@ -58,20 +64,20 @@ def read_alunos(filter: FiltroPaginacao = Depends(), session: Session = Depends(
 @router.get('/{aluno_id}', response_model=AlunoPublic)
 def read_aluno(aluno_id: str, session: Session = Depends(get_session)):
     aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
-    
+
     if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
-        
+
     return aluno
 
 
 @router.put('/{aluno_id}', response_model=AlunoPublic)
 def update_aluno(aluno_id: str, aluno: AlunoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     db_aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
-    
+
     if not db_aluno:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, 
+            status_code=HTTPStatus.NOT_FOUND,
             detail='Aluno não encontrado'
         )
 
@@ -95,9 +101,9 @@ def update_aluno(aluno_id: str, aluno: AlunoCreate, session: Session = Depends(g
 
         return db_aluno
 
-    except IntegrityError: 
+    except IntegrityError:
         raise HTTPException(
-            status_code=HTTPStatus.CONFLICT, 
+            status_code=HTTPStatus.CONFLICT,
             detail='Matrícula ou email já cadastrados'
         )
 
@@ -119,4 +125,4 @@ def delete_aluno(aluno_id: str, session: Session = Depends(get_session), current
     session.delete(db_aluno)
     session.commit()
 
-    return {'message': 'Aluno deletado'}
+    return {'mensagem': 'Aluno deletado'}

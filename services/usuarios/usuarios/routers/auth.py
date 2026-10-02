@@ -11,16 +11,15 @@ from usuarios.models import Usuario
 from usuarios.schemas import Token
 from usuarios.security import create_access_token, verify_password
 
-
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
 @router.post('/token', response_model=Token)
 def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[Session, Depends(get_session)]
 ):
-    usuario = session.scalar(select(Usuario).where(Usuario.email == form_data.username)) 
+    usuario = session.scalar(select(Usuario).where(Usuario.email == form_data.username))
 
     if not usuario:
         raise HTTPException(
