@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class TipoUsuario(Enum):
@@ -45,20 +45,60 @@ class AlunoPublic(UsuarioPublic):
     matricula_id: str
     curso_id: str
     tipo: TipoUsuario = TipoUsuario.ALUNO
-    model_config = ConfigDict(from_attributes = True)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlunoList(BaseModel):
     alunos: list[AlunoPublic]
 
-# JWT
 
+# JWT
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-# Filter
 
+# Filter
 class FiltroPaginacao(BaseModel):
     offset: int = Field(0, ge=0)
     limit: int = Field(100, ge=1)
+
+
+# Professor schemas
+class ProfessorCreate(UsuarioCreate):
+    matricula_id: str
+    departamento_id: str
+    ativo: bool = True
+    tipo: TipoUsuario = TipoUsuario.PROFESSOR
+
+
+class ProfessorPublic(UsuarioPublic):
+    id: UUID
+    matricula_id: str
+    departamento_id: str
+    tipo: TipoUsuario = TipoUsuario.PROFESSOR
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProfessorList(BaseModel):
+    professores: list[ProfessorPublic]
+
+
+# Admin schemas
+class AdminCreate(UsuarioCreate):
+    matricula_id: str
+    setor: str
+    ativo: bool = True
+    tipo: TipoUsuario = TipoUsuario.ADMIN
+
+
+class AdminPublic(UsuarioPublic):
+    id: UUID
+    matricula_id: str
+    setor: str
+    tipo: TipoUsuario = TipoUsuario.ADMIN
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminList(BaseModel):
+    admins: list[AdminPublic]

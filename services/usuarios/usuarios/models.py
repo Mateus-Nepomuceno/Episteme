@@ -44,3 +44,35 @@ class Aluno(Usuario):
     matricula_id: Mapped[str]
     curso_id: Mapped[str]
     ativo: Mapped[bool] = mapped_column(default=True)
+
+
+@mapped_as_dataclass(table_registry)
+class Professor(Usuario):
+    __tablename__ = 'professores'
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'PROFESSOR',
+    }
+
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey('usuarios.id'), primary_key=True, init=False
+    )
+    matricula_id: Mapped[str]
+    departamento_id: Mapped[str]
+    ativo: Mapped[bool] = mapped_column(default=True)
+
+
+@mapped_as_dataclass(table_registry)
+class Admin(Usuario):
+    __tablename__ = 'admins'
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'ADMIN',
+    }
+
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey('usuarios.id'), primary_key=True, init=False
+    )
+    matricula_id: Mapped[str]
+    setor: Mapped[str]
+    ativo: Mapped[bool] = mapped_column(default=True)
