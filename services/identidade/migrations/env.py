@@ -5,8 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from usuarios.models import table_registry
-from usuarios.settings import Settings
+from identidade.models import table_registry
+from identidade.settings import Settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -69,7 +69,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True
         )
 
         with context.begin_transaction():
