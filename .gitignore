@@ -15,3 +15,9 @@ htmlcov/
 .vscode/
 
 .env
+
+database.db
+
+.agents
+
+academico/
