@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -51,3 +52,30 @@ class ProfessorPublic(BaseModel):
 
 class ProfessorList(BaseModel):
     professores: list[ProfessorPublic]
+
+
+# Turma schemas
+class TurmaCreate(BaseModel):
+    nome: str
+    professor_id: UUID
+    materia: str
+
+    aluno_ids: list[UUID] = Field(default_factory=list)
+    documentos: list[str] = Field(default_factory=list)
+    avisos: list[str] = Field(default_factory=list)
+
+
+class TurmaPublic(BaseModel):
+    id: UUID
+    nome: str
+    professor: ProfessorPublic
+    materia: str
+    alunos: list[AlunoPublic]
+    documentos: list[str]
+    avisos: list[str]
+    criado_em: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TurmaList(BaseModel):
+    turmas: list[TurmaPublic]
