@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from turma.models import DiaSemana
 
 
 class Mensagem(BaseModel):
@@ -79,3 +81,28 @@ class TurmaPublic(BaseModel):
 
 class TurmaList(BaseModel):
     turmas: list[TurmaPublic]
+
+
+# Horario schemas
+class HorarioCreate(BaseModel):
+    turma_id: UUID
+    professor_id: UUID
+    dia_semana: DiaSemana
+    horario_inicio: str  # HH:MM
+    horario_fim: str  # HH:MM
+    local: str
+
+
+class HorarioPublic(BaseModel):
+    id: UUID
+    turma: TurmaPublic
+    professor: ProfessorPublic
+    dia_semana: DiaSemana
+    horario_inicio: time
+    horario_fim: time
+    local: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HorarioList(BaseModel):
+    horarios: list[HorarioPublic]
