@@ -76,9 +76,19 @@ def check_horario_tem_conflito(horario: HorarioCreate, session: Annotated[Sessio
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=HorarioPublic)
-def create_horario(horario: HorarioCreate, session: Annotated[Session, Depends(get_session)]):
+def create_horario(
+    horario: HorarioCreate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+):
     horario_inicio = time.fromisoformat(horario.horario_inicio)
     horario_fim = time.fromisoformat(horario.horario_fim)
+
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Permissão negada'
+        )
 
     check_horario_tem_conflito(horario, session)
 

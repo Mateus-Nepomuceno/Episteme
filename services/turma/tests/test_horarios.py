@@ -7,6 +7,41 @@ from turma.models import DiaSemana, Horario, Professor, Turma
 from turma.security import CurrentUser, get_current_user
 
 
+def test_create_horario_forbidden(client, session):
+    uid = uuid4()
+    professor = Professor(usuario_id=uid, matricula_id='123')
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[]
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    response = client.post(
+        '/horarios/',
+        json={
+            'turma_id': str(turma.id),
+            'professor_id': str(professor.id),
+            'dia_semana': DiaSemana.segunda.value,
+            'horario_inicio': time(7).isoformat(),
+            'horario_fim': time(9).isoformat(),
+            'local': 'Sala 1',
+        }
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    app.dependency_overrides.clear()
+
+
 def test_create_horario_conflict_horario(client, session):
     uid = uuid4()
     professor = Professor(usuario_id=uid, matricula_id='123')
@@ -26,6 +61,7 @@ def test_create_horario_conflict_horario(client, session):
     session.commit()
     session.refresh(turma)
 
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.post(
         '/horarios/',
         json={
@@ -38,6 +74,7 @@ def test_create_horario_conflict_horario(client, session):
         }
     )
     assert response.status_code == HTTPStatus.CONFLICT
+    app.dependency_overrides.clear()
 
 
 def test_create_horario_conflict_turma(client, session):
@@ -70,6 +107,7 @@ def test_create_horario_conflict_turma(client, session):
     session.add(horario)
     session.commit()
 
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.post(
         '/horarios/',
         json={
@@ -82,6 +120,7 @@ def test_create_horario_conflict_turma(client, session):
         }
     )
     assert response.status_code == HTTPStatus.CONFLICT
+    app.dependency_overrides.clear()
 
 
 def test_create_horario_conflict_professor(client, session):
@@ -124,6 +163,7 @@ def test_create_horario_conflict_professor(client, session):
     session.add(horario)
     session.commit()
 
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.post(
         '/horarios/',
         json={
@@ -136,6 +176,7 @@ def test_create_horario_conflict_professor(client, session):
         }
     )
     assert response.status_code == HTTPStatus.CONFLICT
+    app.dependency_overrides.clear()
 
 
 def test_create_horario_conflict_local(client, session):
@@ -182,6 +223,7 @@ def test_create_horario_conflict_local(client, session):
     session.add(horario)
     session.commit()
 
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.post(
         '/horarios/',
         json={
@@ -194,6 +236,7 @@ def test_create_horario_conflict_local(client, session):
         }
     )
     assert response.status_code == HTTPStatus.CONFLICT
+    app.dependency_overrides.clear()
 
 
 def test_create_horario(client, session):
@@ -215,6 +258,7 @@ def test_create_horario(client, session):
     session.commit()
     session.refresh(turma)
 
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.post(
         '/horarios/',
         json={
@@ -228,6 +272,7 @@ def test_create_horario(client, session):
     )
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()['local'] == 'Sala 1'
+    app.dependency_overrides.clear()
 
 
 def test_update_horario_not_found(client):
