@@ -8,9 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from turma.database import get_session
-from turma.models import Horario
+from turma.models import Aluno, Horario, Professor, Turma
 from turma.schemas import (
     HorarioCreate,
+    HorarioList,
     HorarioPublic,
     Mensagem,
 )
@@ -106,6 +107,66 @@ def create_horario(
     session.refresh(db_horario)
 
     return db_horario
+
+
+@router.get('/aluno/{aluno_id}', response_model=HorarioList)
+def read_horarios_aluno(
+    aluno_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+):
+    db_aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
+
+    if not db_aluno:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Aluno não encontrado'
+        )
+
+    if current_user.id != db_aluno.usuario_id and not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Permissão negada'
+        )
+
+    db_horarios = session.scalars(
+        select(Horario)
+        .where(
+            Horario.turma.has(
+                Turma.alunos.any(Aluno.id == aluno_id)
+            )
+        )
+    ).all()
+
+    return {'horarios': db_horarios}
+
+
+@router.get('/professor/{professor_id}', response_model=HorarioList)
+def read_horarios_professor(
+    professor_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+):
+    db_professor = session.scalar(select(Professor).where(Professor.id == professor_id))
+
+    if not db_professor:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Professor não encontrado'
+        )
+
+    if current_user.id != db_professor.usuario_id and not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Permissão negada'
+        )
+
+    db_horarios = session.scalars(
+        select(Horario)
+        .where(Horario.professor_id == professor_id)
+    ).all()
+
+    return {'horarios': db_horarios}
 
 
 @router.put('/{horario_id}', response_model=HorarioPublic)

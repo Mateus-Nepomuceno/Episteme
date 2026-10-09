@@ -3,7 +3,7 @@ from http import HTTPStatus
 from uuid import uuid4
 
 from turma.app import app
-from turma.models import DiaSemana, Horario, Professor, Turma
+from turma.models import Aluno, DiaSemana, Horario, Professor, Turma
 from turma.security import CurrentUser, get_current_user
 
 
@@ -272,6 +272,168 @@ def test_create_horario(client, session):
     )
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()['local'] == 'Sala 1'
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_aluno_not_found(client):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
+    response = client.get(f'/horarios/aluno/{uuid4()}')
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_aluno_forbidden(client, session):
+    aluno = Aluno(usuario_id=uuid4(), matricula_id='1', curso_id='1', ativo=True)
+    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    session.add(aluno)
+    session.add(professor)
+    session.commit()
+    session.refresh(aluno)
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[],
+        alunos=[aluno],
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    horario = Horario(
+        turma_id=turma.id,
+        professor_id=professor.id,
+        dia_semana=DiaSemana.segunda,
+        horario_inicio=time(7),
+        horario_fim=time(9),
+        local='Sala 1',
+    )
+    session.add(horario)
+    session.commit()
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    response = client.get(f'/horarios/aluno/{aluno.id}')
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_aluno(client, session):
+    aluno = Aluno(usuario_id=uuid4(), matricula_id='1', curso_id='1', ativo=True)
+    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    session.add(aluno)
+    session.add(professor)
+    session.commit()
+    session.refresh(aluno)
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[],
+        alunos=[aluno],
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    horario = Horario(
+        turma_id=turma.id,
+        professor_id=professor.id,
+        dia_semana=DiaSemana.segunda,
+        horario_inicio=time(7),
+        horario_fim=time(9),
+        local='Sala 1',
+    )
+    session.add(horario)
+    session.commit()
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=aluno.usuario_id, email='teste@teste.com', e_admin=False)
+    response = client.get(f'/horarios/aluno/{aluno.id}')
+    assert response.status_code == HTTPStatus.OK
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_professor_not_found(client):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
+    response = client.get(f'/horarios/professor/{uuid4()}')
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_professor_forbidden(client, session):
+    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[],
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    horario = Horario(
+        turma_id=turma.id,
+        professor_id=professor.id,
+        dia_semana=DiaSemana.segunda,
+        horario_inicio=time(7),
+        horario_fim=time(9),
+        local='Sala 1',
+    )
+    session.add(horario)
+    session.commit()
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    response = client.get(f'/horarios/professor/{professor.id}')
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    app.dependency_overrides.clear()
+
+
+def test_read_horarios_professor(client, session):
+    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[],
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    horario = Horario(
+        turma_id=turma.id,
+        professor_id=professor.id,
+        dia_semana=DiaSemana.segunda,
+        horario_inicio=time(7),
+        horario_fim=time(9),
+        local='Sala 1',
+    )
+    session.add(horario)
+    session.commit()
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=professor.usuario_id, email='teste@teste.com', e_admin=False)
+    response = client.get(f'/horarios/professor/{professor.id}')
+    assert response.status_code == HTTPStatus.OK
     app.dependency_overrides.clear()
 
 
