@@ -35,6 +35,22 @@ def test_read_aluno_not_found(client):
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
+def test_read_aluno_usuario_id(client, session):
+    uid = uuid4()
+    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    session.add(aluno)
+    session.commit()
+
+    response = client.get(f'/alunos/usuario_id/{aluno.usuario_id}')
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['matricula_id'] == '123'
+
+
+def test_read_aluno_usuario_id_not_found(client):
+    response = client.get(f'/alunos/usuario_id/{uuid4()}')
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
 def test_update_aluno(client, session):
     uid = uuid4()
     aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)

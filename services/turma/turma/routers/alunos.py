@@ -65,6 +65,16 @@ def read_aluno(aluno_id: UUID, session: Annotated[Session, Depends(get_session)]
     return aluno
 
 
+@router.get('/usuario_id/{aluno_usuario_id}', response_model=AlunoPublic)
+def read_aluno_usuario_id(aluno_usuario_id: UUID, session: Annotated[Session, Depends(get_session)]):
+    aluno = session.scalar(select(Aluno).where(Aluno.usuario_id == aluno_usuario_id))
+
+    if not aluno:
+        raise HTTPException(status_code=404, detail='Aluno não encontrado')
+
+    return aluno
+
+
 @router.put('/{aluno_id}', response_model=AlunoPublic)
 def update_aluno(
     aluno_id: UUID,
