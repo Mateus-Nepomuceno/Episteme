@@ -77,3 +77,9 @@ class CursoPublic(BaseModel):
 
 class CursoList(BaseModel):
     cursos: list[CursoPublic]
+
+class CadastroAcademicoResponse(BaseModel):
+    mensagem: str
+    usuario_id: UUID
+    aluno_id: UUID
+    curso_id: str
