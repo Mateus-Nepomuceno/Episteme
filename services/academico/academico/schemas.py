@@ -1,0 +1,195 @@
+from uuid import UUID
+from datetime import datetime, timezone
+from typing import Literal
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
+
+
+class Mensagem(BaseModel):
+    mensagem: str
+
+
+# Filter
+class FiltroPaginacao(BaseModel):
+    offset: int = Field(0, ge=0)
+    limit: int = Field(100, ge=1)
+
+
+# Disciplina schemas
+class DisciplinaCreate(BaseModel):
+    codigo: str
+    nome: str
+    carga_horaria: int
+    tipo: str
+    departamento: str
+    creditos: int | None = None
+    periodo_curricular: int | None = None
+    ementa: str | None = None
+    bibliografia: str | None = None
+    pre_requisitos: str | None = None
+
+
+class DisciplinaPublic(BaseModel):
+    id: UUID
+    codigo: str
+    nome: str
+    carga_horaria: int
+    tipo: str
+    departamento: str
+    creditos: int | None
+    periodo_curricular: int | None
+    ementa: str | None
+    bibliografia: str | None
+    pre_requisitos: str | None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DisciplinaList(BaseModel):
+    disciplinas: list[DisciplinaPublic]
+
+
+# Curso schemas
+class CursoCreate(BaseModel):
+    codigo: str
+    nome: str
+    tipo_formacao: str
+    modalidade: str
+    nivel_academico: str
+    carga_horaria_total: int
+    campus: str
+    duracao: int | None = None
+    documentacao: str | None = None
+    ativo: bool = True
+
+
+class CursoPublic(BaseModel):
+    id: UUID
+    codigo: str
+    nome: str
+    tipo_formacao: str
+    modalidade: str
+    nivel_academico: str
+    carga_horaria_total: int
+    campus: str
+    duracao: int | None
+    documentacao: str | None
+    ativo: bool
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CursoList(BaseModel):
+    cursos: list[CursoPublic]
+
+class CadastroAcademicoResponse(BaseModel):
+    mensagem: str
+    usuario_id: UUID
+    aluno_id: UUID
+    curso_id: str
+
+class SolicitacaoMatriculaCreate(BaseModel):
+    periodo_letivo: str = Field(pattern=r'^\d{4}\.[12]$')
+    turmas_ids: list[UUID] = Field(min_length=1)
+
+
+class SolicitacaoMatriculaResponse(BaseModel):
+    id: UUID
+    protocolo: UUID
+    usuario_id: UUID
+    aluno_id: UUID
+    curso_id: UUID
+    periodo_letivo: str
+    turmas_ids: list[UUID]
+    situacao: str
+    data_solicitacao: datetime
+    observacao: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SolicitacaoMatriculaCriadaResponse(SolicitacaoMatriculaResponse):
+    mensagem: str
+
+class SolicitacoesMatriculaList(BaseModel):
+    solicitacoes: list[SolicitacaoMatriculaResponse]
+
+class ObservacaoMatriculaUpdate(BaseModel):
+    observacao: str | None = Field(default=None, max_length=1000)
+
+
+class PeriodoMatriculaCreate(BaseModel):
+    periodo_letivo: str = Field(
+        pattern=r"^\d{4}\.[12]$",
+    )
+    data_inicial: datetime
+    data_final: datetime
+    cursos_ids: list[UUID] = Field(min_length=1)
+    tipo: Literal["regular", "ajuste", "extraordinario"]
+    turmas_ids: list[UUID] = Field(default_factory=list)
+
+    @field_validator("data_inicial", "data_final")
+    @classmethod
+    def normalizar_data(cls, valor: datetime) -> datetime:
+        if valor.tzinfo is None or valor.utcoffset() is None:
+            raise ValueError(
+                "A data deve incluir o fuso horário, "
+                "como -03:00 ou +00:00"
+            )
+
+        # O banco SQLite armazena o horário normalizado em UTC,
+        # sem informação de fuso.
+        return valor.astimezone(timezone.utc).replace(tzinfo=None)
+
+    @model_validator(mode="after")
+    def validar_intervalo(self):
+        if self.data_final <= self.data_inicial:
+            raise ValueError(
+                "A data final deve ser posterior à data inicial"
+            )
+        return self
+
+
+class PeriodoMatriculaResponse(BaseModel):
+    id: UUID
+    periodo_letivo: str
+    data_inicial: datetime
+    data_final: datetime
+    cursos_ids: list[UUID]
+    tipo: Literal["regular", "ajuste", "extraordinario"]
+    turmas_ids: list[UUID]
+    status: Literal["agendado", "aberto", "encerrado"]
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("data_inicial", "data_final")
+    def serializar_data(self, valor: datetime) -> datetime:
+        if valor.tzinfo is None:
+            return valor.replace(tzinfo=timezone.utc)
+        return valor.astimezone(timezone.utc)
+
+
+class PeriodoMatriculaCriadoResponse(PeriodoMatriculaResponse):
+    mensagem: str
+
+
+class PeriodosMatriculaList(BaseModel):
+    periodos: list[PeriodoMatriculaResponse]
+
+
+class TurmaDisponivelResponse(BaseModel):
+    id: UUID
+    nome: str
+    disciplina: str
+    periodo_letivo: str
+    professor_matricula_id: str | None = None
+
+
+class TurmasDisponiveisResponse(BaseModel):
+    periodo_letivo: str
+    turmas: list[TurmaDisponivelResponse]
