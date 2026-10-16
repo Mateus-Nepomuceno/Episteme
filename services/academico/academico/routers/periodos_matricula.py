@@ -16,6 +16,7 @@ from academico.schemas import (
     PeriodosMatriculaList,
 )
 from academico.security import CurrentUser, get_current_user
+from academico.services.periodos_matricula_service import atualizar_status
 
 
 router = APIRouter(

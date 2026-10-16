@@ -9,6 +9,9 @@ from academico.routers import cursos, disciplinas, matriculas
 from academico.routers.periodos_matricula import (
     router as periodos_matricula_router,
 )
+from academico.tasks.periodos_matricula_scheduler import (
+    executar_scheduler_periodos,
+)
 from academico.schemas import Mensagem
 
 app = FastAPI()

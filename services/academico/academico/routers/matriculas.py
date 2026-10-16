@@ -25,6 +25,7 @@ from academico.security import CurrentUser, get_current_user
 from academico.settings import Settings
 from academico.routers.periodos_matricula import atualizar_status
 
+from academico.services.periodos_matricula_service import atualizar_status
 settings = Settings()
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
