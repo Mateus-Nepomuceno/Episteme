@@ -1,11 +1,16 @@
 import httpx
 from uuid import uuid4
 from unittest.mock import Mock, patch
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from academico.app import app
-from academico.models import Curso, SolicitacaoMatricula
+from academico.models import (
+    Curso,
+    PeriodoMatricula,
+    SolicitacaoMatricula,
+)
 from academico.security import CurrentUser, get_current_user
 
 
@@ -183,6 +188,20 @@ def test_solicitar_matricula_com_turma_simulada(
     session.add(curso)
     session.commit()
     session.refresh(curso)
+
+    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    periodo = PeriodoMatricula(
+        periodo_letivo="2026.2",
+        data_inicial=agora - timedelta(days=1),
+        data_final=agora + timedelta(days=5),
+        cursos_ids=[str(curso.id)],
+        tipo="regular",
+        turmas_ids=[],
+    )
+
+    session.add(periodo)
+    session.commit()
 
     aluno_id = uuid4()
 

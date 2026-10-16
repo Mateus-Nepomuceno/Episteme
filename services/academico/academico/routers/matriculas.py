@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 
 from academico.database import get_session
 from sqlalchemy import select
-from academico.models import Curso, SolicitacaoMatricula
+from academico.models import (
+    Curso,
+    PeriodoMatricula,
+    SolicitacaoMatricula,
+)
 from academico.schemas import (
     SolicitacaoMatriculaCreate,
     SolicitacaoMatriculaResponse,
@@ -19,6 +23,7 @@ from academico.schemas import (
 )
 from academico.security import CurrentUser, get_current_user
 from academico.settings import Settings
+from academico.routers.periodos_matricula import atualizar_status
 
 settings = Settings()
 
@@ -85,6 +90,59 @@ def solicitar_matricula(
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='O curso do aluno não está cadastrado no serviço acadêmico',
+        )
+
+    periodos = session.scalars(
+        select(PeriodoMatricula).where(
+            PeriodoMatricula.periodo_letivo == dados.periodo_letivo
+        )
+    ).all()
+
+    periodos = [
+        atualizar_status(periodo, session)
+        for periodo in periodos
+    ]
+
+    periodos_abertos = [
+        periodo
+        for periodo in periodos
+        if periodo.status == 'aberto'
+    ]
+
+    if not periodos_abertos:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail='Não existe período de matrícula aberto para o período letivo informado',
+        )
+
+    periodos_do_curso = [
+        periodo
+        for periodo in periodos_abertos
+        if str(curso_id) in periodo.cursos_ids
+    ]
+
+    if not periodos_do_curso:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='O curso do aluno não está autorizado neste período de matrícula',
+        )
+
+    turmas_solicitadas = {
+        str(turma_id)
+        for turma_id in dados.turmas_ids
+    }
+
+    periodos_compativeis = [
+        periodo
+        for periodo in periodos_do_curso
+        if not periodo.turmas_ids
+        or turmas_solicitadas.issubset(set(periodo.turmas_ids))
+    ]
+
+    if not periodos_compativeis:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Uma ou mais turmas solicitadas não estão disponíveis neste período',
         )
 
     solicitacao = SolicitacaoMatricula(

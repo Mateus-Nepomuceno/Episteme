@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_as_dataclass, mapped_column, registry
 table_registry = registry()
 
 from datetime import datetime
-from sqlalchemy import JSON, func
+from sqlalchemy import JSON, DateTime, func
 
 
 @mapped_as_dataclass(table_registry)
@@ -73,4 +73,39 @@ class SolicitacaoMatricula:
     data_solicitacao: Mapped[datetime] = mapped_column(
         init=False,
         server_default=func.now(),
+    )
+
+
+@mapped_as_dataclass(table_registry)
+class PeriodoMatricula:
+    __tablename__ = "periodos_matricula"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+        init=False,
+    )
+
+    periodo_letivo: Mapped[str]
+
+    data_inicial: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    data_final: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    cursos_ids: Mapped[list[str]] = mapped_column(JSON)
+
+    tipo: Mapped[str]
+
+    turmas_ids: Mapped[list[str]] = mapped_column(
+        JSON,
+        default_factory=list,
+        server_default="[]",
+    )
+
+    status: Mapped[str] = mapped_column(
+        default="agendado",
     )
