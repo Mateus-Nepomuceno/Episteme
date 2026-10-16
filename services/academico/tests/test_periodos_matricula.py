@@ -412,3 +412,152 @@ def test_scheduler_atualiza_status_dos_periodos(session):
     assert periodo_para_abrir.status == "aberto"
     assert periodo_para_encerrar.status == "encerrado"
     assert periodo_encerrado_manualmente.status == "encerrado"
+
+
+def criar_periodo_para_teste_listagem(
+    session, curso_id, turma_ids, periodo_letivo="2026.2",
+    data_inicio=None, data_fim=None,
+):
+    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    periodo = PeriodoMatricula(
+        periodo_letivo=periodo_letivo,
+        data_inicial=data_inicio or agora - timedelta(hours=1),
+        data_final=data_fim or agora + timedelta(days=2),
+        cursos_ids=[str(curso_id)],
+        tipo="regular",
+        turmas_ids=[str(turma_id) for turma_id in turma_ids],
+        status="agendado",
+    )
+
+    session.add(periodo)
+    session.commit()
+    session.refresh(periodo)
+    return periodo
+
+
+def mock_resposta_turma(payload, status_code=200):
+    resposta = Mock()
+    resposta.status_code = status_code
+    resposta.is_error = status_code >= 400
+    resposta.json.return_value = payload
+    return resposta
+
+
+def test_listar_turmas_disponiveis_filtra_por_disciplina(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+    turma_permitida = uuid4()
+    turma_nao_permitida = uuid4()
+
+    criar_periodo_para_teste_listagem(
+        session,
+        curso.id,
+        [turma_permitida],
+    )
+
+    resposta_aluno = mock_resposta_turma({
+        "id": str(uuid4()),
+        "curso_id": str(curso.id),
+    })
+
+    resposta_turmas = mock_resposta_turma({
+        "turmas": [
+            {
+                "id": str(turma_permitida),
+                "nome": "Turma A",
+                "materia": "Matemática",
+                "professor": {"matricula_id": "P001"},
+            },
+            {
+                "id": str(turma_nao_permitida),
+                "nome": "Turma B",
+                "materia": "Matemática",
+                "professor": {"matricula_id": "P002"},
+            },
+        ]
+    })
+
+    with patch(
+        "academico.routers.matriculas.httpx.get",
+        side_effect=[resposta_aluno, resposta_turmas],
+    ):
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={
+                "periodo_letivo": "2026.2",
+                "disciplina": "matemática",
+            },
+        )
+
+    assert resposta.status_code == 200
+
+    dados = resposta.json()
+    assert dados["periodo_letivo"] == "2026.2"
+    assert len(dados["turmas"]) == 1
+    assert dados["turmas"][0]["id"] == str(turma_permitida)
+    assert dados["turmas"][0]["disciplina"] == "Matemática"
+
+
+def test_listar_turmas_sem_periodo_aberto_retorna_conflito(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    criar_periodo_para_teste_listagem(
+        session,
+        curso.id,
+        [uuid4()],
+        data_inicio=agora - timedelta(days=3),
+        data_fim=agora - timedelta(hours=1),
+    )
+
+    with patch(
+        "academico.routers.matriculas.httpx.get"
+    ) as requisicao:
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={"periodo_letivo": "2026.2"},
+        )
+
+    assert resposta.status_code == 409
+    requisicao.assert_not_called()
+
+
+def test_listar_turmas_curso_nao_autorizado_retorna_forbidden(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+
+    criar_periodo_para_teste_listagem(
+        session,
+        uuid4(),
+        [uuid4()],
+    )
+
+    resposta_aluno = mock_resposta_turma({
+        "id": str(uuid4()),
+        "curso_id": str(curso.id),
+    })
+
+    with patch(
+        "academico.routers.matriculas.httpx.get",
+        return_value=resposta_aluno,
+    ):
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={"periodo_letivo": "2026.2"},
+        )
+
+    assert resposta.status_code == 403
+    assert resposta.json()["detail"] == (
+        "O curso do aluno não está autorizado neste período"
+    )

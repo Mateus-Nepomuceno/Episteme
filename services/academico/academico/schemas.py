@@ -180,3 +180,16 @@ class PeriodoMatriculaCriadoResponse(PeriodoMatriculaResponse):
 
 class PeriodosMatriculaList(BaseModel):
     periodos: list[PeriodoMatriculaResponse]
+
+
+class TurmaDisponivelResponse(BaseModel):
+    id: UUID
+    nome: str
+    disciplina: str
+    periodo_letivo: str
+    professor_matricula_id: str | None = None
+
+
+class TurmasDisponiveisResponse(BaseModel):
+    periodo_letivo: str
+    turmas: list[TurmaDisponivelResponse]
