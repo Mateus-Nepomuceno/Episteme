@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -83,3 +84,22 @@ class CadastroAcademicoResponse(BaseModel):
     usuario_id: UUID
     aluno_id: UUID
     curso_id: str
+
+class SolicitacaoMatriculaCreate(BaseModel):
+    periodo_letivo: str = Field(pattern=r'^\d{4}\.[12]$')
+    turmas_ids: list[UUID] = Field(min_length=1)
+
+
+class SolicitacaoMatriculaResponse(BaseModel):
+    mensagem: str
+    id: UUID
+    protocolo: UUID
+    usuario_id: UUID
+    aluno_id: UUID
+    curso_id: UUID
+    periodo_letivo: str
+    turmas_ids: list[UUID]
+    situacao: str
+    data_solicitacao: datetime
+
+    model_config = ConfigDict(from_attributes=True)
