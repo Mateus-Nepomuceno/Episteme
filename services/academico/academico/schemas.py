@@ -91,7 +91,6 @@ class SolicitacaoMatriculaCreate(BaseModel):
 
 
 class SolicitacaoMatriculaResponse(BaseModel):
-    mensagem: str
     id: UUID
     protocolo: UUID
     usuario_id: UUID
@@ -101,5 +100,16 @@ class SolicitacaoMatriculaResponse(BaseModel):
     turmas_ids: list[UUID]
     situacao: str
     data_solicitacao: datetime
+    observacao: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SolicitacaoMatriculaCriadaResponse(SolicitacaoMatriculaResponse):
+    mensagem: str
+
+class SolicitacoesMatriculaList(BaseModel):
+    solicitacoes: list[SolicitacaoMatriculaResponse]
+
+class ObservacaoMatriculaUpdate(BaseModel):
+    observacao: str | None = Field(default=None, max_length=1000)

@@ -63,6 +63,7 @@ class SolicitacaoMatricula:
     aluno_id: Mapped[UUID]
     curso_id: Mapped[UUID]
     periodo_letivo: Mapped[str]
+    observacao: Mapped[str | None] = mapped_column(default=None)
     turmas_ids: Mapped[list[str]] = mapped_column(
         JSON,
         default_factory=list,
