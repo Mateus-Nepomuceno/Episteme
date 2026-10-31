@@ -44,7 +44,7 @@ def create_usuario(
         cpf=usuario.cpf,
         telefone=usuario.telefone,
         senha=get_password_hash(usuario.senha),
-        e_admin=usuario.e_admin,
+        e_admin=False,
     )
 
     session.add(db_usuario)
@@ -85,6 +85,12 @@ def update_usuario(
     if current_user.id != usuario_id and not current_user.e_admin:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
+    if usuario.e_admin != db_usuario.e_admin and not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Apenas administradores podem alterar privilégios',
         )
 
     db_usuario.nome = usuario.nome

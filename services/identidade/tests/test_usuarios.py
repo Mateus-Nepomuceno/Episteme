@@ -313,3 +313,46 @@ def test_update_usuario_cpf_invalido_e_recusado(client, user, user_token):
         ),
     )
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_nao_cria_administrador(client, session):
+    response = client.post(
+        '/usuarios/',
+        json=_payload_usuario(email='novo@exemplo.com', e_admin=True),
+    )
+
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.json()['e_admin'] is False
+
+
+def test_update_usuario_comum_nao_se_promove(client, user, user_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+        json=_payload_usuario(
+            email=user.email,
+            cpf=user.cpf,
+            telefone=user.telefone,
+            senha='senha_limpa',
+            e_admin=True,
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_update_usuario_admin_pode_promover(client, user, admin_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {admin_token}'},
+        json=_payload_usuario(
+            email=user.email,
+            cpf=user.cpf,
+            telefone=user.telefone,
+            senha='senha_limpa',
+            e_admin=True,
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['e_admin'] is True
