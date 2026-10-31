@@ -5,6 +5,9 @@ from turma.app import app
 from turma.models import Aluno
 from turma.security import CurrentUser, get_current_user
 
+CURSO_A = '11111111-1111-1111-1111-111111111111'
+CURSO_B = '22222222-2222-2222-2222-222222222222'
+
 
 def test_create_aluno_conflict(client, session):
     uid = uuid4()
@@ -14,7 +17,7 @@ def test_create_aluno_conflict(client, session):
 
     response = client.post(
         '/alunos/',
-        json={'usuario_id': str(uid), 'matricula_id': '123', 'curso_id': '1', 'ativo': True},
+        json={'usuario_id': str(uid), 'matricula_id': '123', 'curso_id': CURSO_A, 'ativo': True},
     )
     assert response.status_code == HTTPStatus.CONFLICT
 
@@ -78,11 +81,11 @@ def test_update_aluno(client, session):
     new_uid = uuid4()
     response = client.put(
         f'/alunos/{aluno.id}',
-        json={'usuario_id': str(new_uid), 'matricula_id': '1234', 'curso_id': '2', 'ativo': False},
+        json={'usuario_id': str(new_uid), 'matricula_id': '1234', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.OK
     assert response.json()['matricula_id'] == '1234'
-    assert response.json()['curso_id'] == '2'
+    assert response.json()['curso_id'] == CURSO_B
     app.dependency_overrides.clear()
 
 
@@ -91,7 +94,7 @@ def test_update_aluno_not_found(client):
 
     response = client.put(
         f'/alunos/{uuid4()}',
-        json={'usuario_id': str(uuid4()), 'matricula_id': '1234', 'curso_id': '2', 'ativo': False},
+        json={'usuario_id': str(uuid4()), 'matricula_id': '1234', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.NOT_FOUND
     app.dependency_overrides.clear()
@@ -107,7 +110,7 @@ def test_update_aluno_forbidden(client, session):
 
     response = client.put(
         f'/alunos/{aluno.id}',
-        json={'usuario_id': str(uuid4()), 'matricula_id': '1234', 'curso_id': '2', 'ativo': False},
+        json={'usuario_id': str(uuid4()), 'matricula_id': '1234', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.FORBIDDEN
     app.dependency_overrides.clear()
@@ -126,7 +129,7 @@ def test_update_aluno_conflict(client, session):
 
     response = client.put(
         f'/alunos/{aluno1.id}',
-        json={'usuario_id': str(uid2), 'matricula_id': '124', 'curso_id': '2', 'ativo': False},
+        json={'usuario_id': str(uid2), 'matricula_id': '124', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.CONFLICT
     app.dependency_overrides.clear()

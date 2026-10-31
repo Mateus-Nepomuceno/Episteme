@@ -1,7 +1,7 @@
 from datetime import datetime, time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from turma.models import DiaSemana
 
@@ -20,8 +20,21 @@ class FiltroPaginacao(BaseModel):
 class AlunoCreate(BaseModel):
     usuario_id: UUID
     matricula_id: str
+    # UUID do curso, o mesmo identificador usado pelo serviço acadêmico.
     curso_id: str
     ativo: bool = True
+
+    @field_validator('curso_id')
+    @classmethod
+    def validar_curso_id(cls, valor: str) -> str:
+        try:
+            return str(UUID(valor))
+        except ValueError:
+            mensagem = (
+                'curso_id deve ser o identificador (UUID) do curso '
+                'cadastrado no serviço acadêmico'
+            )
+            raise ValueError(mensagem)
 
 
 class AlunoPublic(BaseModel):

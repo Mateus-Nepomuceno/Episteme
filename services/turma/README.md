@@ -3,6 +3,19 @@
 Gerencia alunos, professores, turmas e horários. Os demais serviços consomem
 os dados por HTTP. O academico, por exemplo, não guarda cópia das turmas.
 
+## Cadastro de aluno
+
+`POST /alunos/` e `PUT /alunos/{id}` validam `curso_id` em duas etapas:
+
+1. Formato: precisa ser um UUID, o mesmo identificador de curso do serviço
+   acadêmico. Valores como `string`, `1` ou vazio retornam `422`.
+2. Existência e situação: o serviço consulta `GET /cursos/{id}` no serviço
+   acadêmico. Curso inexistente ou inativo retorna `422`. Se o serviço
+   acadêmico não responder, a resposta é `503`.
+
+A URL do serviço acadêmico vem da variável `ACADEMICO_API_URL`, por exemplo
+`http://127.0.0.1:8002`. Sem essa variável, o cadastro de aluno retorna `503`.
+
 ## Contrato de turmas ofertadas
 
 ### `GET /turmas/ofertas`
@@ -19,7 +32,7 @@ Parâmetros de consulta:
 | `disciplina`     | não         | Trecho do nome da disciplina, sem diferenciar maiúsculas de minúsculas.                   |
 | `codigo`         | não         | Código institucional da disciplina, comparado de forma exata e sem diferenciar maiúsculas. |
 | `dia_semana`     | não         | `Segunda`, `Terça`, `Quarta`, `Quinta` ou `Sexta`.                                        |
-| `horario_inicio` | não         | Início da faixa (`HH:MM:SS`). Considera encontros que começam nesse horário ou depois.     |
+| `horario_inicio` | não         | Início da faixa (`HH:MM:SS`). Considera encontros que começam nesse horário ou depois.      |
 | `horario_fim`    | não         | Fim da faixa (`HH:MM:SS`). Considera encontros que terminam nesse horário ou antes.       |
 | `offset`         | não         | Paginação. Padrão `0`.                                                                    |
 | `limit`          | não         | Tamanho da página. Padrão `100`.                                                          |
@@ -55,35 +68,3 @@ Resposta:
     }
   ]
 }
-```
-
-Regras:
-
-- `professor` é `null` quando a turma ainda não tem professor alocado.
-- `vagas_disponiveis` é `capacidade` menos a quantidade de alunos com
-  `ativo = true` matriculados na turma. O valor nunca fica negativo. Se a
-  turma não tem capacidade cadastrada, o campo é `null`.
-- A resposta não inclui `usuario_id`, matrícula ou outros dados de alunos.
-
-### Criação e atualização de turma
-
-`POST /turmas/` e `PUT /turmas/{id}` exigem:
-
-- `nome`, `materia` e `codigo` (texto);
-- `curso_id` (UUID do curso no academico);
-- `periodo_letivo` (formato `AAAA.1` ou `AAAA.2`);
-- `capacidade` (inteiro maior que zero).
-
-`professor_id` é opcional. Quando informado, o professor precisa existir.
-
-Os campos `alunos`, `horarios` e `professor` continuam presentes em
-`GET /turmas/{id}` e `GET /turmas/`. Esses endpoints expõem os alunos
-matriculados, por isso não devem ser usados para a consulta de matrícula.
-Use `GET /turmas/ofertas`.
-
-## Observações sobre o esquema
-
-As migrações Alembic deste serviço não criam a tabela `turmas`. O esquema
-dessa tabela vem de `table_registry.metadata`. Bancos que já existem precisam
-ganhar as colunas `codigo`, `curso_id`, `periodo_letivo` e `capacidade`, e a
-coluna `professor_id` precisa aceitar nulo.

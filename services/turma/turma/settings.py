@@ -11,3 +11,5 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(init=False)
     ALGORITHM: str = Field(init=False)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(init=False)
+    # URL base do serviço acadêmico, usada para validar o curso do aluno.
+    ACADEMICO_API_URL: str | None = None

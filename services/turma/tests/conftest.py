@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -47,3 +48,14 @@ def current_user_override():
     app.dependency_overrides[app.dependency_overrides.get('get_current_user', None)] = override
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def curso_academico():
+    # Por padrão, todo curso consultado existe e está ativo. Os testes que
+    # precisam de outro cenário sobrescrevem o retorno deste mock.
+    with patch(
+        'turma.routers.alunos.consultar_curso',
+        return_value={'ativo': True},
+    ) as mock:
+        yield mock
