@@ -146,8 +146,8 @@ class HorarioCreate(BaseModel):
     turma_id: UUID
     professor_id: UUID
     dia_semana: DiaSemana
-    horario_inicio: str  # HH:MM
-    horario_fim: str  # HH:MM
+    horario_inicio: time
+    horario_fim: time
     local: str
 
 
