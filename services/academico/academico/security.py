@@ -18,6 +18,7 @@ class CurrentUser(BaseModel):
     id: UUID
     email: str
     e_admin: bool
+    token: str = ''
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
@@ -39,7 +40,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
         e_admin = payload.get('e_admin')
         if not email or not user_id or e_admin is None:
             raise credentials_exception
-        return CurrentUser(id=user_id, email=email, e_admin=e_admin)
+        return CurrentUser(
+            id=user_id, email=email, e_admin=e_admin, token=token
+        )
 
 
 def exigir_admin(

@@ -5,7 +5,6 @@ from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -17,6 +16,7 @@ from academico.models import (
     PeriodoMatricula,
     SolicitacaoMatricula,
 )
+from academico.periodos import atualizar_status
 from academico.schemas import (
     DiaSemanaFiltro,
     ObservacaoMatriculaUpdate,
@@ -27,11 +27,12 @@ from academico.schemas import (
     TurmaDisponivelResponse,
     TurmasDisponiveisResponse,
 )
-from academico.security import CurrentUser, exigir_admin, get_current_user
-from academico.periodos import atualizar_status
-from academico.settings import Settings
-
-settings = Settings()
+from academico.security import (
+    CurrentUser,
+    exigir_admin,
+    get_current_user,
+)
+from academico.turma_client import buscar_aluno_por_usuario, listar_ofertas
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
 
@@ -59,37 +60,7 @@ def solicitar_matricula(
     ],
     session: Annotated[Session, Depends(get_session)],
 ):
-    url = (
-        f'{settings.TURMA_API_URL.rstrip("/")}'
-        f'/alunos/usuario_id/{current_user.id}'
-    )
-
-    try:
-        response = httpx.get(url, timeout=5.0)
-    except httpx.TimeoutException as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail='O serviço de turma demorou para responder',
-        ) from exc
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail='Não foi possível acessar o serviço de turma',
-        ) from exc
-
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail='Cadastro de aluno não encontrado',
-        )
-
-    if response.is_error:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail='O serviço de turma retornou um erro',
-        )
-
-    aluno = response.json()
+    aluno = buscar_aluno_por_usuario(current_user.id, current_user.token)
 
     try:
         aluno_id = UUID(str(aluno['id']))
@@ -356,38 +327,9 @@ def consultar_turmas_disponiveis(
             detail="Não há período de matrícula aberto para este semestre",
         )
 
-    url_aluno = (
-        f'{settings.TURMA_API_URL.rstrip("/")}'
-        f'/alunos/usuario_id/{current_user.id}'
-    )
+    aluno = buscar_aluno_por_usuario(current_user.id, current_user.token)
 
     try:
-        resposta_aluno = httpx.get(url_aluno, timeout=5.0)
-    except httpx.TimeoutException as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail="O serviço de turma demorou para responder",
-        ) from exc
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail="Não foi possível acessar o serviço de turma",
-        ) from exc
-
-    if resposta_aluno.status_code == HTTPStatus.NOT_FOUND:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail="Cadastro de aluno não encontrado",
-        )
-
-    if resposta_aluno.is_error:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="O serviço de turma retornou um erro",
-        )
-
-    try:
-        aluno = resposta_aluno.json()
         curso_id = str(UUID(str(aluno["curso_id"])))
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(
@@ -439,55 +381,7 @@ def consultar_turmas_disponiveis(
     if filtro.horario_fim:
         filtros_turma["horario_fim"] = filtro.horario_fim.isoformat()
 
-    url_ofertas = f'{settings.TURMA_API_URL.rstrip("/")}/turmas/ofertas'
-    limite = 100
-    offset = 0
-    ofertas_remotas = []
-
-    while True:
-        try:
-            resposta_turmas = httpx.get(
-                url_ofertas,
-                params={**filtros_turma, "offset": offset, "limit": limite},
-                timeout=5.0,
-            )
-        except httpx.TimeoutException as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.GATEWAY_TIMEOUT,
-                detail="O serviço de turma demorou para responder",
-            ) from exc
-        except httpx.RequestError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-                detail="Não foi possível acessar o serviço de turma",
-            ) from exc
-
-        if resposta_turmas.is_error:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="O serviço de turma retornou um erro",
-            )
-
-        try:
-            pagina = resposta_turmas.json()["turmas"]
-        except (ValueError, KeyError, TypeError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="O serviço de turma retornou uma resposta inválida",
-            ) from exc
-
-        if not isinstance(pagina, list):
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="A listagem de turmas retornada é inválida",
-            )
-
-        ofertas_remotas.extend(pagina)
-
-        if len(pagina) < limite:
-            break
-
-        offset += limite
+    ofertas_remotas = listar_ofertas(filtros_turma, current_user.token)
 
     turmas_disponiveis = []
 

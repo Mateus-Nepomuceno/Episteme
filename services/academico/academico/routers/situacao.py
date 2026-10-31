@@ -1,9 +1,7 @@
 from http import HTTPStatus
 from typing import Annotated
-from urllib.parse import quote
 from uuid import UUID
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,9 +13,7 @@ from academico.schemas import (
     SituacaoAcademicaAlunoPublic,
 )
 from academico.security import CurrentUser, get_current_user
-from academico.settings import Settings
-
-settings = Settings()
+from academico.turma_client import buscar_aluno_por_matricula
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
 
@@ -34,43 +30,7 @@ def consultar_situacao_academica_aluno(
     ],
     session: Annotated[Session, Depends(get_session)],
 ):
-    url = (
-        f'{settings.TURMA_API_URL.rstrip("/")}'
-        f'/alunos/matricula_id/{quote(matricula_aluno, safe="")}'
-    )
-
-    try:
-        response = httpx.get(url, timeout=5.0)
-    except httpx.TimeoutException as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail='O serviço de turma demorou para responser'
-        ) from exc
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail='Não foi possível acessar o serviço de turma'
-        ) from exc
-
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail='Cadastro de aluno não encontrado',
-        )
-
-    if response.is_error:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail='O serviço de turma retornou um erro',
-        )
-
-    try:
-        aluno = response.json()
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail='O serviço de turma retornou uma resposta inválida',
-        ) from exc
+    aluno = buscar_aluno_por_matricula(matricula_aluno, current_user.token)
 
     try:
         usuario_id = UUID(str(aluno['usuario_id']))

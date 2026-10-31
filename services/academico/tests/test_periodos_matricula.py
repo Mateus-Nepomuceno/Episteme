@@ -274,7 +274,7 @@ def test_solicitar_matricula_sem_periodo_aberto_retorna_conflito(
     curso = criar_curso_para_teste(session)
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         return_value=resposta_turma_simulada(curso.id),
     ):
         resposta = client.post(
@@ -305,7 +305,7 @@ def test_solicitar_matricula_curso_nao_autorizado_retorna_forbidden(
     )
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         return_value=resposta_turma_simulada(curso.id),
     ):
         resposta = client.post(
@@ -338,7 +338,7 @@ def test_solicitar_matricula_turma_nao_permitida_retorna_422(
     )
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         return_value=resposta_turma_simulada(curso.id),
     ):
         resposta = client.post(
@@ -431,7 +431,7 @@ def test_listar_turmas_disponiveis_retorna_oferta_completa(
     })
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         side_effect=[resposta_aluno, resposta_turmas],
     ):
         resposta = client.get(
@@ -476,7 +476,7 @@ def test_listar_turmas_encaminha_filtros_ao_servico_turma(
     resposta_turmas = mock_resposta_turma({"turmas": []})
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         side_effect=[resposta_aluno, resposta_turmas],
     ) as requisicao:
         resposta = client.get(
@@ -524,7 +524,7 @@ def test_listar_turmas_aceita_turma_sem_professor(
     })
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         side_effect=[resposta_aluno, resposta_turmas],
     ):
         resposta = client.get(
@@ -544,7 +544,7 @@ def test_listar_turmas_com_horario_invertido_retorna_erro(
 ):
     autenticar_periodo()
 
-    with patch("academico.routers.matriculas.httpx.get") as requisicao:
+    with patch("academico.turma_client.httpx.get") as requisicao:
         resposta = client.get(
             "/matricula/turmas-disponiveis",
             params={
@@ -576,7 +576,7 @@ def test_listar_turmas_com_resposta_invalida_do_servico_turma(
     })
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         side_effect=[resposta_aluno, resposta_turmas],
     ):
         resposta = client.get(
@@ -604,7 +604,7 @@ def test_listar_turmas_sem_periodo_aberto_retorna_conflito(
     )
 
     with patch(
-        "academico.routers.matriculas.httpx.get"
+        "academico.turma_client.httpx.get"
     ) as requisicao:
         resposta = client.get(
             "/matricula/turmas-disponiveis",
@@ -634,7 +634,7 @@ def test_listar_turmas_curso_nao_autorizado_retorna_forbidden(
     })
 
     with patch(
-        "academico.routers.matriculas.httpx.get",
+        "academico.turma_client.httpx.get",
         return_value=resposta_aluno,
     ):
         resposta = client.get(
