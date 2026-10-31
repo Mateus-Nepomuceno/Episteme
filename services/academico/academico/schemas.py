@@ -1,6 +1,6 @@
-from uuid import UUID
 from datetime import datetime, time, timezone
 from typing import Literal
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -84,11 +84,13 @@ class CursoPublic(BaseModel):
 class CursoList(BaseModel):
     cursos: list[CursoPublic]
 
+
 class CadastroAcademicoResponse(BaseModel):
     mensagem: str
     usuario_id: UUID
     aluno_id: UUID
     curso_id: str
+
 
 class SolicitacaoMatriculaCreate(BaseModel):
     periodo_letivo: str = Field(pattern=r'^\d{4}\.[12]$')
@@ -113,8 +115,10 @@ class SolicitacaoMatriculaResponse(BaseModel):
 class SolicitacaoMatriculaCriadaResponse(SolicitacaoMatriculaResponse):
     mensagem: str
 
+
 class SolicitacoesMatriculaList(BaseModel):
     solicitacoes: list[SolicitacaoMatriculaResponse]
+
 
 class ObservacaoMatriculaUpdate(BaseModel):
     observacao: str | None = Field(default=None, max_length=1000)

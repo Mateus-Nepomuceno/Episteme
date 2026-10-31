@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_as_dataclass, mapped_column, registry
 table_registry = registry()
 
 from datetime import datetime
+
 from sqlalchemy import JSON, DateTime, func
 
 
@@ -44,6 +45,7 @@ class Curso:
     duracao: Mapped[int | None] = mapped_column(default=None)
     documentacao: Mapped[str | None] = mapped_column(default=None)
     ativo: Mapped[bool] = mapped_column(default=True)
+
 
 @mapped_as_dataclass(table_registry)
 class SolicitacaoMatricula:
