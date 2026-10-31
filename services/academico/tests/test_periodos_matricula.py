@@ -444,41 +444,49 @@ def mock_resposta_turma(payload, status_code=200):
     return resposta
 
 
-def test_listar_turmas_disponiveis_filtra_por_disciplina(
+def turma_ofertada(turma_id, **campos):
+    oferta = {
+        "id": str(turma_id),
+        "nome": "Turma A",
+        "codigo": "MAT101",
+        "materia": "Matemática",
+        "curso_id": None,
+        "periodo_letivo": "2026.2",
+        "capacidade": 30,
+        "vagas_disponiveis": 12,
+        "professor": {"id": str(uuid4()), "matricula_id": "P001"},
+        "horarios": [
+            {
+                "dia_semana": "Segunda",
+                "horario_inicio": "08:00:00",
+                "horario_fim": "10:00:00",
+                "local": "Sala 101",
+            }
+        ],
+    }
+    oferta.update(campos)
+    return oferta
+
+
+def test_listar_turmas_disponiveis_retorna_oferta_completa(
     client, session, autenticar_periodo
 ):
     autenticar_periodo()
 
     curso = criar_curso_teste(session)
     turma_permitida = uuid4()
-    turma_nao_permitida = uuid4()
 
-    criar_periodo_para_teste_listagem(
-        session,
-        curso.id,
-        [turma_permitida],
-    )
+    criar_periodo_para_teste_listagem(session, curso.id, [turma_permitida])
 
     resposta_aluno = mock_resposta_turma({
         "id": str(uuid4()),
         "curso_id": str(curso.id),
     })
-
     resposta_turmas = mock_resposta_turma({
         "turmas": [
-            {
-                "id": str(turma_permitida),
-                "nome": "Turma A",
-                "materia": "Matemática",
-                "professor": {"matricula_id": "P001"},
-            },
-            {
-                "id": str(turma_nao_permitida),
-                "nome": "Turma B",
-                "materia": "Matemática",
-                "professor": {"matricula_id": "P002"},
-            },
-        ]
+            turma_ofertada(turma_permitida),
+            turma_ofertada(uuid4(), nome="Turma fora do período"),
+        ],
     })
 
     with patch(
@@ -487,19 +495,155 @@ def test_listar_turmas_disponiveis_filtra_por_disciplina(
     ):
         resposta = client.get(
             "/matricula/turmas-disponiveis",
+            params={"periodo_letivo": "2026.2"},
+        )
+
+    assert resposta.status_code == 200
+    assert len(resposta.json()["turmas"]) == 1
+    turma = resposta.json()["turmas"][0]
+    assert turma["id"] == str(turma_permitida)
+    assert turma["nome"] == "Turma A"
+    assert turma["codigo"] == "MAT101"
+    assert turma["disciplina"] == "Matemática"
+    assert turma["capacidade"] == 30
+    assert turma["vagas_disponiveis"] == 12
+    assert turma["professor_matricula_id"] == "P001"
+    assert turma["professor"]["matricula_id"] == "P001"
+    assert turma["horarios"] == [
+        {
+            "dia_semana": "Segunda",
+            "horario_inicio": "08:00:00",
+            "horario_fim": "10:00:00",
+            "local": "Sala 101",
+        }
+    ]
+
+
+def test_listar_turmas_encaminha_filtros_ao_servico_turma(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+    turma_permitida = uuid4()
+    criar_periodo_para_teste_listagem(session, curso.id, [turma_permitida])
+
+    resposta_aluno = mock_resposta_turma({
+        "id": str(uuid4()),
+        "curso_id": str(curso.id),
+    })
+    resposta_turmas = mock_resposta_turma({"turmas": []})
+
+    with patch(
+        "academico.routers.matriculas.httpx.get",
+        side_effect=[resposta_aluno, resposta_turmas],
+    ) as requisicao:
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
             params={
                 "periodo_letivo": "2026.2",
-                "disciplina": "matemática",
+                "disciplina": "Matemática",
+                "codigo": "MAT101",
+                "dia_semana": "Segunda",
+                "horario_inicio": "08:00:00",
+                "horario_fim": "12:00:00",
             },
         )
 
     assert resposta.status_code == 200
+    url_ofertas = requisicao.call_args_list[1].args[0]
+    parametros = requisicao.call_args_list[1].kwargs["params"]
+    assert url_ofertas.endswith("/turmas/ofertas")
+    assert parametros["curso_id"] == str(curso.id)
+    assert parametros["periodo_letivo"] == "2026.2"
+    assert parametros["disciplina"] == "Matemática"
+    assert parametros["codigo"] == "MAT101"
+    assert parametros["dia_semana"] == "Segunda"
+    assert parametros["horario_inicio"] == "08:00:00"
+    assert parametros["horario_fim"] == "12:00:00"
 
-    dados = resposta.json()
-    assert dados["periodo_letivo"] == "2026.2"
-    assert len(dados["turmas"]) == 1
-    assert dados["turmas"][0]["id"] == str(turma_permitida)
-    assert dados["turmas"][0]["disciplina"] == "Matemática"
+
+def test_listar_turmas_aceita_turma_sem_professor(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+    turma_permitida = uuid4()
+    criar_periodo_para_teste_listagem(session, curso.id, [turma_permitida])
+
+    resposta_aluno = mock_resposta_turma({
+        "id": str(uuid4()),
+        "curso_id": str(curso.id),
+    })
+    resposta_turmas = mock_resposta_turma({
+        "turmas": [
+            turma_ofertada(turma_permitida, professor=None, horarios=[]),
+        ],
+    })
+
+    with patch(
+        "academico.routers.matriculas.httpx.get",
+        side_effect=[resposta_aluno, resposta_turmas],
+    ):
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={"periodo_letivo": "2026.2"},
+        )
+
+    assert resposta.status_code == 200
+    turma = resposta.json()["turmas"][0]
+    assert turma["professor"] is None
+    assert turma["professor_matricula_id"] is None
+    assert turma["horarios"] == []
+
+
+def test_listar_turmas_com_horario_invertido_retorna_erro(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    with patch("academico.routers.matriculas.httpx.get") as requisicao:
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={
+                "periodo_letivo": "2026.2",
+                "horario_inicio": "12:00:00",
+                "horario_fim": "08:00:00",
+            },
+        )
+
+    assert resposta.status_code == 422
+    requisicao.assert_not_called()
+
+
+def test_listar_turmas_com_resposta_invalida_do_servico_turma(
+    client, session, autenticar_periodo
+):
+    autenticar_periodo()
+
+    curso = criar_curso_teste(session)
+    turma_permitida = uuid4()
+    criar_periodo_para_teste_listagem(session, curso.id, [turma_permitida])
+
+    resposta_aluno = mock_resposta_turma({
+        "id": str(uuid4()),
+        "curso_id": str(curso.id),
+    })
+    resposta_turmas = mock_resposta_turma({
+        "turmas": [turma_ofertada(turma_permitida, horarios="inválido")],
+    })
+
+    with patch(
+        "academico.routers.matriculas.httpx.get",
+        side_effect=[resposta_aluno, resposta_turmas],
+    ):
+        resposta = client.get(
+            "/matricula/turmas-disponiveis",
+            params={"periodo_letivo": "2026.2"},
+        )
+
+    assert resposta.status_code == 502
 
 
 def test_listar_turmas_sem_periodo_aberto_retorna_conflito(

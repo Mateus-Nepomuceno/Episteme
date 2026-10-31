@@ -1,5 +1,5 @@
 from uuid import UUID
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from typing import Literal
 
 from pydantic import (
@@ -182,12 +182,32 @@ class PeriodosMatriculaList(BaseModel):
     periodos: list[PeriodoMatriculaResponse]
 
 
+DiaSemanaFiltro = Literal["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
+
+
+class HorarioTurmaResponse(BaseModel):
+    dia_semana: DiaSemanaFiltro
+    horario_inicio: time
+    horario_fim: time
+    local: str
+
+
+class ProfessorTurmaResponse(BaseModel):
+    id: UUID
+    matricula_id: str
+
+
 class TurmaDisponivelResponse(BaseModel):
     id: UUID
     nome: str
+    codigo: str | None = None
     disciplina: str
     periodo_letivo: str
+    capacidade: int | None = None
+    vagas_disponiveis: int | None = None
+    professor: ProfessorTurmaResponse | None = None
     professor_matricula_id: str | None = None
+    horarios: list[HorarioTurmaResponse] = Field(default_factory=list)
 
 
 class TurmasDisponiveisResponse(BaseModel):
