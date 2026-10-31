@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, decode
+from jwt import InvalidTokenError, decode
 from pydantic import BaseModel
 
 from turma.settings import Settings
@@ -27,7 +27,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
 
     try:
         payload = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except DecodeError:
+    except InvalidTokenError:
         raise credentials_exception
     else:
         email = payload.get('sub')
