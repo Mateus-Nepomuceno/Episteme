@@ -22,7 +22,16 @@ router = APIRouter(prefix='/professores', tags=['professores'])
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=ProfessorPublic)
-def create_professor(professor: ProfessorCreate, session: Annotated[Session, Depends(get_session)]):
+def create_professor(
+    professor: ProfessorCreate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     db_professor = session.scalar(
         select(Professor).where(
             (Professor.matricula_id == professor.matricula_id)
@@ -49,7 +58,16 @@ def create_professor(professor: ProfessorCreate, session: Annotated[Session, Dep
 
 
 @router.get('/', response_model=ProfessorList)
-def read_professores(filter: Annotated[FiltroPaginacao, Depends()], session: Annotated[Session, Depends(get_session)]):
+def read_professores(
+    filter: Annotated[FiltroPaginacao, Depends()],
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     professores = session.scalars(select(Professor).offset(filter.offset).limit(filter.limit)).all()
     return {'professores': professores}
 

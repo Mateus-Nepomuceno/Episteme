@@ -147,3 +147,26 @@ def test_delete_professor_forbidden(client, session):
     response = client.delete(f'/professores/{professor.id}')
     assert response.status_code == HTTPStatus.FORBIDDEN
     app.dependency_overrides.clear()
+
+
+def test_create_professor_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.post(
+        '/professores/',
+        json={'usuario_id': str(uuid4()), 'matricula_id': '999', 'ativo': True},
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_listar_professores_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.get('/professores/')
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
