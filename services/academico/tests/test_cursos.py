@@ -268,3 +268,42 @@ def test_read_cursos(client):
     response = client.get('/cursos/')
     assert response.status_code == HTTPStatus.OK
     assert 'cursos' in response.json()
+
+
+def test_create_curso_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.post(
+        '/cursos/',
+        json={
+            'codigo': 'CUR-X',
+            'nome': 'Curso X',
+            'tipo_formacao': 'graduacao',
+            'modalidade': 'presencial',
+            'nivel_academico': 'graduacao',
+            'carga_horaria_total': 2400,
+            'campus': 'Central',
+        },
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_create_curso_sem_autenticacao(client, session):
+    app.dependency_overrides.pop(get_current_user, None)
+    response = client.post(
+        '/cursos/',
+        json={
+            'codigo': 'CUR-Y',
+            'nome': 'Curso Y',
+            'tipo_formacao': 'graduacao',
+            'modalidade': 'presencial',
+            'nivel_academico': 'graduacao',
+            'carga_horaria_total': 2400,
+            'campus': 'Central',
+        },
+    )
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
