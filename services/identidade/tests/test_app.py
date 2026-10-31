@@ -25,7 +25,7 @@ def test_create_usuario(client):
         json={
             'nome': 'carlos',
             'email': 'carlos@exemplo.com',
-            'cpf': '000.000.000-00',
+            'cpf': '111.444.777-35',
             'telefone': '(11) 77777-7777',
             'senha': 'nova_senha',
             'e_admin': False,

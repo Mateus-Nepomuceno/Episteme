@@ -1,6 +1,11 @@
 from http import HTTPStatus
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from identidade.models import Usuario
+from identidade.security import verify_password
+
 
 def test_create_usuario(client):
     response = client.post(
@@ -8,7 +13,7 @@ def test_create_usuario(client):
         json={
             'nome': 'roberto',
             'email': 'roberto@exemplo.com',
-            'cpf': '000.000.000-00',
+            'cpf': '111.444.777-35',
             'telefone': '(11) 77777-7777',
             'senha': 'nova_senha',
             'e_admin': False,
@@ -26,7 +31,7 @@ def test_create_usuario_conflict(client, user):
         json={
             'nome': 'joana clone',
             'email': user.email,
-            'cpf': '111.111.111-11',
+            'cpf': '987.654.321-00',
             'telefone': '(11) 77777-7777',
             'senha': 'nova_senha',
             'e_admin': False,
@@ -73,8 +78,8 @@ def test_update_usuario_forbidden_real(client, user):
         json={
             'nome': 'malicioso',
             'email': 'malicioso@exemplo.com',
-            'cpf': '555.555.555-55',
-            'telefone': '555',
+            'cpf': '000.000.001-91',
+            'telefone': '(11) 95555-5555',
             'senha': 'senha_limpa',
             'e_admin': False,
         },
@@ -113,8 +118,8 @@ def test_update_usuario_not_found(client, user_token):
         json={
             'nome': 'joana atualizada',
             'email': 'algum@email.com',
-            'cpf': '000',
-            'telefone': '000',
+            'cpf': '111.444.777-35',
+            'telefone': '(11) 90000-0000',
             'senha': 'senha_limpa',
             'e_admin': False,
         },
@@ -144,8 +149,8 @@ def test_update_usuario_conflict(client, user, user_token):
         json={
             'nome': 'malicioso2',
             'email': 'malicioso2@exemplo.com',
-            'cpf': '444.444.444-44',
-            'telefone': '444',
+            'cpf': '529.982.247-25',
+            'telefone': '(11) 94444-4444',
             'senha': 'senha_limpa',
             'e_admin': False,
         },
@@ -164,3 +169,147 @@ def test_update_usuario_conflict(client, user, user_token):
         },
     )
     assert response.status_code == HTTPStatus.CONFLICT
+
+
+def _payload_usuario(**campos):
+    payload = {
+        'nome': 'carlos',
+        'email': 'carlos@exemplo.com',
+        'cpf': '111.444.777-35',
+        'telefone': '(11) 97777-7777',
+        'senha': 'senha_valida',
+        'e_admin': False,
+    }
+    payload.update(campos)
+    return payload
+
+
+def test_create_usuario_sem_senha_e_recusado(client, session):
+    response = client.post('/usuarios/', json=_payload_usuario(senha=''))
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_sem_campo_senha_e_recusado(client, session):
+    payload = _payload_usuario()
+    del payload['senha']
+    response = client.post('/usuarios/', json=payload)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_senha_curta_e_recusada(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='a' * 7)
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_senha_minima_e_aceita(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='a' * 8)
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+
+def test_create_usuario_armazena_senha_com_hash(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='senha_secreta')
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+    usuario = session.scalar(
+        select(Usuario).where(Usuario.email == 'carlos@exemplo.com')
+    )
+    assert usuario is not None
+    assert usuario.senha != 'senha_secreta'
+    assert verify_password('senha_secreta', usuario.senha)
+
+
+def test_update_usuario_sem_senha_e_recusado(client, user, user_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+        json=_payload_usuario(
+            email=user.email, cpf=user.cpf, telefone=user.telefone, senha=''
+        ),
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_normaliza_cpf_e_telefone(client, session):
+    response = client.post(
+        '/usuarios/',
+        json=_payload_usuario(
+            email='normalizado@exemplo.com',
+            cpf='111 444 777 35',
+            telefone='(11) 97777-7777',
+        ),
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+    usuario = session.scalar(
+        select(Usuario).where(Usuario.email == 'normalizado@exemplo.com')
+    )
+    assert usuario.cpf == '111.444.777-35'
+    assert usuario.telefone == '+5511977777777'
+
+
+def test_create_usuario_aceita_telefone_com_codigo_do_pais(client, session):
+    response = client.post(
+        '/usuarios/',
+        json=_payload_usuario(
+            email='pais@exemplo.com', telefone='+5511999998888'
+        ),
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+    usuario = session.scalar(
+        select(Usuario).where(Usuario.email == 'pais@exemplo.com')
+    )
+    assert usuario.telefone == '+5511999998888'
+
+
+def test_create_usuario_cpf_com_digito_verificador_invalido(client):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(cpf='111.444.777-36')
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_cpf_com_todos_digitos_iguais(client):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(cpf='111.111.111-11')
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_cpf_com_tamanho_errado(client):
+    response = client.post('/usuarios/', json=_payload_usuario(cpf='1114447'))
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_telefone_com_tamanho_invalido(client):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(telefone='+55 11 9999')
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_telefone_com_letras(client):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(telefone='11 9999-ABCD')
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_update_usuario_cpf_invalido_e_recusado(client, user, user_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+        json=_payload_usuario(
+            email=user.email,
+            cpf='000.000.000-00',
+            telefone=user.telefone,
+            senha='senha_limpa',
+        ),
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

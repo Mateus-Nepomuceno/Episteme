@@ -60,17 +60,25 @@ class Turma:
         primary_key=True, default=uuid4, init=False
     )
     nome: Mapped[str] = mapped_column()
-    professor_id: Mapped[UUID] = mapped_column(
-        ForeignKey("professores.id")
-    )
     materia: Mapped[str]
+    # Código institucional da disciplina ofertada nesta turma.
+    codigo: Mapped[str | None] = mapped_column(default=None)
+    # Identificador do curso no serviço academico.
+    curso_id: Mapped[UUID | None] = mapped_column(default=None)
+    periodo_letivo: Mapped[str | None] = mapped_column(default=None)
+    capacidade: Mapped[int | None] = mapped_column(default=None)
+    professor_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("professores.id"), default=None
+    )
     criado_em: Mapped[datetime] = mapped_column(
         DateTime,
         init=False,
         default=datetime.now
     )
 
-    professor: Mapped[Professor] = relationship(back_populates='turmas')
+    professor: Mapped[Professor | None] = relationship(
+        back_populates='turmas', default=None
+    )
     alunos: Mapped[list[Aluno]] = relationship(
         secondary='turma_aluno', back_populates='turmas', default_factory=list
     )
@@ -89,7 +97,7 @@ class TurmaAluno:
     turma_id: Mapped[UUID] = mapped_column(
         ForeignKey("turmas.id"), primary_key=True
     )
-    aluno_id: Mapped[int] = mapped_column(
+    aluno_id: Mapped[UUID] = mapped_column(
         ForeignKey("alunos.id"), primary_key=True
     )
 
