@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from jwt import decode, encode
 
@@ -43,5 +45,30 @@ def test_get_current_user_user_not_found(client):
     )
     response = client.delete(
         f'/usuarios/{uuid4()}', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_get_current_user_token_expirado(client, user):
+    settings = Settings()
+    expirado = encode(
+        {
+            'sub': user.email,
+            'exp': datetime.now(tz=ZoneInfo('UTC')) - timedelta(minutes=1),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {expirado}'},
+        json={
+            'nome': 'joana',
+            'email': user.email,
+            'cpf': user.cpf,
+            'telefone': user.telefone,
+            'senha': 'senha_limpa',
+        },
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED
