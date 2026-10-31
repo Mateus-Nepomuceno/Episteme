@@ -1,9 +1,12 @@
 
+from dataclasses import dataclass
+from datetime import time
 from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
 import httpx
+from pydantic import ValidationError
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -15,6 +18,8 @@ from academico.models import (
     SolicitacaoMatricula,
 )
 from academico.schemas import (
+    DiaSemanaFiltro,
+    TurmaDisponivelResponse,
     SolicitacaoMatriculaCreate,
     SolicitacaoMatriculaResponse,
     SolicitacoesMatriculaList,
@@ -30,6 +35,16 @@ from academico.services.periodos_matricula_service import atualizar_status
 settings = Settings()
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
+
+
+@dataclass(frozen=True)
+class FiltroTurmasDisponiveis:
+    disciplina: str | None = None
+    codigo: str | None = None
+    dia_semana: DiaSemanaFiltro | None = None
+    horario_inicio: time | None = None
+    horario_fim: time | None = None
+    turma: str | None = None
 
 
 @router.post(
@@ -305,9 +320,17 @@ def consultar_turmas_disponiveis(
         Depends(get_current_user),
     ],
     session: Annotated[Session, Depends(get_session)],
-    disciplina: str | None = None,
-    turma: str | None = None,
+    filtro: Annotated[FiltroTurmasDisponiveis, Depends()],
 ):
+    if (
+        filtro.horario_inicio
+        and filtro.horario_fim
+        and filtro.horario_inicio > filtro.horario_fim
+    ):
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Horário de início deve ser anterior ao horário de fim",
+        )
 
     periodos = session.scalars(
         select(PeriodoMatricula).where(
@@ -389,6 +412,7 @@ def consultar_turmas_disponiveis(
             detail="O curso do aluno não está autorizado neste período",
         )
 
+    # A coordenação define quais turmas podem ser cursadas no período.
     turmas_permitidas = {
         str(UUID(str(turma_id)))
         for periodo in periodos_autorizados
@@ -398,23 +422,39 @@ def consultar_turmas_disponiveis(
     if not turmas_permitidas:
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail=(
-                "Este período não possui turmas específicas configuradas. "
-                "O serviço de turma ainda não permite filtrar as ofertas "
-                "diretamente por curso e período letivo."
-            ),
+            detail="Este período não possui turmas autorizadas pela coordenação",
         )
 
-    url_turmas = f'{settings.TURMA_API_URL.rstrip("/")}/turmas/'
+    filtros_turma = {
+        "curso_id": curso_id,
+        "periodo_letivo": periodo_letivo,
+    }
+
+    if filtro.disciplina:
+        filtros_turma["disciplina"] = filtro.disciplina
+
+    if filtro.codigo:
+        filtros_turma["codigo"] = filtro.codigo
+
+    if filtro.dia_semana:
+        filtros_turma["dia_semana"] = filtro.dia_semana
+
+    if filtro.horario_inicio:
+        filtros_turma["horario_inicio"] = filtro.horario_inicio.isoformat()
+
+    if filtro.horario_fim:
+        filtros_turma["horario_fim"] = filtro.horario_fim.isoformat()
+
+    url_ofertas = f'{settings.TURMA_API_URL.rstrip("/")}/turmas/ofertas'
     limite = 100
     offset = 0
-    turmas_remotas = []
+    ofertas_remotas = []
 
     while True:
         try:
             resposta_turmas = httpx.get(
-                url_turmas,
-                params={"offset": offset, "limit": limite},
+                url_ofertas,
+                params={**filtros_turma, "offset": offset, "limit": limite},
                 timeout=5.0,
             )
         except httpx.TimeoutException as exc:
@@ -448,7 +488,7 @@ def consultar_turmas_disponiveis(
                 detail="A listagem de turmas retornada é inválida",
             )
 
-        turmas_remotas.extend(pagina)
+        ofertas_remotas.extend(pagina)
 
         if len(pagina) < limite:
             break
@@ -457,7 +497,7 @@ def consultar_turmas_disponiveis(
 
     turmas_disponiveis = []
 
-    for item in turmas_remotas:
+    for item in ofertas_remotas:
         try:
             turma_id = str(UUID(str(item["id"])))
         except (ValueError, TypeError, KeyError) as exc:
@@ -470,23 +510,36 @@ def consultar_turmas_disponiveis(
             continue
 
         nome_turma = str(item.get("nome", ""))
-        materia = str(item.get("materia", ""))
 
-        if disciplina and disciplina.casefold() not in materia.casefold():
+        if filtro.turma and (
+            filtro.turma.casefold() not in nome_turma.casefold()
+        ):
             continue
 
-        if turma and turma.casefold() not in nome_turma.casefold():
-            continue
+        professor = item.get("professor") or None
 
-        professor = item.get("professor") or {}
+        try:
+            oferta = TurmaDisponivelResponse.model_validate({
+                "id": turma_id,
+                "nome": nome_turma,
+                "codigo": item.get("codigo"),
+                "disciplina": str(item.get("materia", "")),
+                "periodo_letivo": periodo_letivo,
+                "capacidade": item.get("capacidade"),
+                "vagas_disponiveis": item.get("vagas_disponiveis"),
+                "professor": professor,
+                "professor_matricula_id": (
+                    professor.get("matricula_id") if professor else None
+                ),
+                "horarios": item.get("horarios") or [],
+            })
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail="O serviço de turma retornou uma turma inválida",
+            ) from exc
 
-        turmas_disponiveis.append({
-            "id": turma_id,
-            "nome": nome_turma,
-            "disciplina": materia,
-            "periodo_letivo": periodo_letivo,
-            "professor_matricula_id": professor.get("matricula_id"),
-        })
+        turmas_disponiveis.append(oferta)
 
     return {
         "periodo_letivo": periodo_letivo,
