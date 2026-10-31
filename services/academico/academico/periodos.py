@@ -1,10 +1,7 @@
-
 from datetime import datetime, timezone
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from academico.database import get_session
 from academico.models import PeriodoMatricula
 
 
@@ -41,39 +38,3 @@ def atualizar_status(
         session.refresh(periodo)
 
     return periodo
-
-
-def atualizar_status_periodos(
-    session: Session,
-    agora: datetime | None = None,
-) -> int:
-    periodos = session.scalars(
-        select(PeriodoMatricula)
-    ).all()
-
-    quantidade_atualizada = 0
-
-    for periodo in periodos:
-        novo_status = calcular_status(periodo, agora)
-
-        if periodo.status != novo_status:
-            periodo.status = novo_status
-            quantidade_atualizada += 1
-
-    if quantidade_atualizada:
-        session.commit()
-
-    return quantidade_atualizada
-
-
-def sincronizar_status_periodos() -> int:
-    gerador_sessao = get_session()
-    session = next(gerador_sessao)
-
-    try:
-        return atualizar_status_periodos(session)
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        gerador_sessao.close()

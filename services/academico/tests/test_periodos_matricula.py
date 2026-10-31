@@ -7,9 +7,6 @@ import pytest
 from academico.app import app
 from academico.models import Curso, PeriodoMatricula
 from academico.security import CurrentUser, get_current_user
-from academico.services.periodos_matricula_service import (
-    atualizar_status_periodos,
-)
 
 
 @pytest.fixture
@@ -356,61 +353,6 @@ def test_solicitar_matricula_turma_nao_permitida_retorna_422(
     assert resposta.json()["detail"] == (
         "Uma ou mais turmas solicitadas não estão disponíveis neste período"
     )
-
-
-def test_scheduler_atualiza_status_dos_periodos(session):
-    agora = datetime(2026, 10, 20, 12, 0, 0)
-
-    periodo_para_abrir = PeriodoMatricula(
-        periodo_letivo="2026.2",
-        data_inicial=agora - timedelta(hours=1),
-        data_final=agora + timedelta(days=2),
-        cursos_ids=[str(uuid4())],
-        tipo="regular",
-        turmas_ids=[],
-        status="agendado",
-    )
-
-    periodo_para_encerrar = PeriodoMatricula(
-        periodo_letivo="2026.2",
-        data_inicial=agora - timedelta(days=3),
-        data_final=agora - timedelta(minutes=1),
-        cursos_ids=[str(uuid4())],
-        tipo="ajuste",
-        turmas_ids=[],
-        status="aberto",
-    )
-
-    periodo_encerrado_manualmente = PeriodoMatricula(
-        periodo_letivo="2026.2",
-        data_inicial=agora + timedelta(days=1),
-        data_final=agora + timedelta(days=3),
-        cursos_ids=[str(uuid4())],
-        tipo="regular",
-        turmas_ids=[],
-        status="encerrado",
-    )
-
-    session.add_all([
-        periodo_para_abrir,
-        periodo_para_encerrar,
-        periodo_encerrado_manualmente,
-    ])
-    session.commit()
-
-    quantidade = atualizar_status_periodos(
-        session,
-        agora=agora,
-    )
-
-    session.refresh(periodo_para_abrir)
-    session.refresh(periodo_para_encerrar)
-    session.refresh(periodo_encerrado_manualmente)
-
-    assert quantidade == 2
-    assert periodo_para_abrir.status == "aberto"
-    assert periodo_para_encerrar.status == "encerrado"
-    assert periodo_encerrado_manualmente.status == "encerrado"
 
 
 def criar_periodo_para_teste_listagem(
