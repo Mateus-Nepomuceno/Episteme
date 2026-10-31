@@ -272,6 +272,77 @@ def atualizar_observacao(
     }
 
 
+def _filtros_para_turma(curso_id, periodo_letivo, filtro):
+    filtros = {"curso_id": curso_id, "periodo_letivo": periodo_letivo}
+
+    if filtro.disciplina:
+        filtros["disciplina"] = filtro.disciplina
+
+    if filtro.codigo:
+        filtros["codigo"] = filtro.codigo
+
+    if filtro.dia_semana:
+        filtros["dia_semana"] = filtro.dia_semana
+
+    if filtro.horario_inicio:
+        filtros["horario_inicio"] = filtro.horario_inicio.isoformat()
+
+    if filtro.horario_fim:
+        filtros["horario_fim"] = filtro.horario_fim.isoformat()
+
+    return filtros
+
+
+def _converter_ofertas(ofertas_remotas, turmas_permitidas, filtro, periodo_letivo):
+    turmas_disponiveis = []
+
+    for item in ofertas_remotas:
+        try:
+            turma_id = str(UUID(str(item["id"])))
+        except (ValueError, TypeError, KeyError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail="O serviço de turma retornou uma turma com ID inválido",
+            ) from exc
+
+        if turma_id not in turmas_permitidas:
+            continue
+
+        nome_turma = str(item.get("nome", ""))
+
+        if filtro.turma and (
+            filtro.turma.casefold() not in nome_turma.casefold()
+        ):
+            continue
+
+        professor = item.get("professor") or None
+
+        try:
+            oferta = TurmaDisponivelResponse.model_validate({
+                "id": turma_id,
+                "nome": nome_turma,
+                "codigo": item.get("codigo"),
+                "disciplina": str(item.get("materia", "")),
+                "periodo_letivo": periodo_letivo,
+                "capacidade": item.get("capacidade"),
+                "vagas_disponiveis": item.get("vagas_disponiveis"),
+                "professor": professor,
+                "professor_matricula_id": (
+                    professor.get("matricula_id") if professor else None
+                ),
+                "horarios": item.get("horarios") or [],
+            })
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail="O serviço de turma retornou uma turma inválida",
+            ) from exc
+
+        turmas_disponiveis.append(oferta)
+
+    return turmas_disponiveis
+
+
 @router.get(
     "/turmas-disponiveis",
     response_model=TurmasDisponiveisResponse,
@@ -361,73 +432,12 @@ def consultar_turmas_disponiveis(
             detail="Este período não possui turmas autorizadas pela coordenação",
         )
 
-    filtros_turma = {
-        "curso_id": curso_id,
-        "periodo_letivo": periodo_letivo,
-    }
-
-    if filtro.disciplina:
-        filtros_turma["disciplina"] = filtro.disciplina
-
-    if filtro.codigo:
-        filtros_turma["codigo"] = filtro.codigo
-
-    if filtro.dia_semana:
-        filtros_turma["dia_semana"] = filtro.dia_semana
-
-    if filtro.horario_inicio:
-        filtros_turma["horario_inicio"] = filtro.horario_inicio.isoformat()
-
-    if filtro.horario_fim:
-        filtros_turma["horario_fim"] = filtro.horario_fim.isoformat()
-
+    filtros_turma = _filtros_para_turma(curso_id, periodo_letivo, filtro)
     ofertas_remotas = listar_ofertas(filtros_turma, current_user.token)
 
-    turmas_disponiveis = []
-
-    for item in ofertas_remotas:
-        try:
-            turma_id = str(UUID(str(item["id"])))
-        except (ValueError, TypeError, KeyError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="O serviço de turma retornou uma turma com ID inválido",
-            ) from exc
-
-        if turma_id not in turmas_permitidas:
-            continue
-
-        nome_turma = str(item.get("nome", ""))
-
-        if filtro.turma and (
-            filtro.turma.casefold() not in nome_turma.casefold()
-        ):
-            continue
-
-        professor = item.get("professor") or None
-
-        try:
-            oferta = TurmaDisponivelResponse.model_validate({
-                "id": turma_id,
-                "nome": nome_turma,
-                "codigo": item.get("codigo"),
-                "disciplina": str(item.get("materia", "")),
-                "periodo_letivo": periodo_letivo,
-                "capacidade": item.get("capacidade"),
-                "vagas_disponiveis": item.get("vagas_disponiveis"),
-                "professor": professor,
-                "professor_matricula_id": (
-                    professor.get("matricula_id") if professor else None
-                ),
-                "horarios": item.get("horarios") or [],
-            })
-        except ValidationError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="O serviço de turma retornou uma turma inválida",
-            ) from exc
-
-        turmas_disponiveis.append(oferta)
+    turmas_disponiveis = _converter_ofertas(
+        ofertas_remotas, turmas_permitidas, filtro, periodo_letivo
+    )
 
     return {
         "periodo_letivo": periodo_letivo,
