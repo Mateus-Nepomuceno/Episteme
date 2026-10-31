@@ -87,7 +87,6 @@ def _turma_corresponde_filtros(turma: Turma, filtro: FiltroOferta) -> bool:
     ):
         return True
 
-    # Um mesmo encontro precisa atender a todos os critérios de horário.
     return any(
         _horario_corresponde(
             horario,

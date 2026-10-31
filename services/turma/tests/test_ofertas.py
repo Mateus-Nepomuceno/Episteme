@@ -274,8 +274,6 @@ def test_ofertas_filtra_por_faixa_de_horario(client, session):
 
 def test_ofertas_combina_dia_e_horario_no_mesmo_encontro(client, session):
     curso = uuid4()
-    # Turma com segunda de manhã e sexta à noite. O filtro "segunda à noite"
-    # não deve casar, porque nenhum encontro atende aos dois critérios.
     criar_turma(
         session,
         curso_id=curso,

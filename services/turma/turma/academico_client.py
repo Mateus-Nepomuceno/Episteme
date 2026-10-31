@@ -10,14 +10,10 @@ RESPOSTA_INVALIDA = 'Resposta inválida do serviço acadêmico'
 
 
 class ServicoAcademicoIndisponivel(Exception):
-    """O serviço acadêmico não respondeu ou não está configurado."""
+    pass
 
 
 def consultar_curso(curso_id: UUID) -> dict | None:
-    """Busca o curso no serviço acadêmico.
-
-    Retorna os dados do curso, ou None quando o curso não existe.
-    """
     if not settings.ACADEMICO_API_URL:
         mensagem = 'ACADEMICO_API_URL não configurada'
         raise ServicoAcademicoIndisponivel(mensagem)

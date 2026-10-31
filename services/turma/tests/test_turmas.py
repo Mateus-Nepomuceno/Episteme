@@ -422,8 +422,6 @@ def test_update_turma_persiste_novos_campos_de_oferta(client, session):
     app.dependency_overrides.clear()
 
     assert response.status_code == HTTPStatus.OK
-    # Descarta alterações não commitadas: se o update não persistiu, os
-    # valores antigos voltam aqui.
     session.rollback()
     persistida = session.get(Turma, turma.id)
     assert persistida.nome == 'Turma nova'

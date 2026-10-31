@@ -52,8 +52,6 @@ def current_user_override():
 
 @pytest.fixture(autouse=True)
 def curso_academico():
-    # Por padrão, todo curso consultado existe e está ativo. Os testes que
-    # precisam de outro cenário sobrescrevem o retorno deste mock.
     with patch(
         'turma.routers.alunos.consultar_curso',
         return_value={'ativo': True},
