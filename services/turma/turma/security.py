@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException
@@ -51,3 +52,20 @@ def get_usuario_opcional(
         return get_current_user(token)
     except HTTPException:
         return None
+
+
+def exigir_admin(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> CurrentUser:
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+    return current_user
+
+
+def exigir_dono_ou_admin(current_user: CurrentUser, usuario_id: UUID) -> None:
+    if current_user.id != usuario_id and not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )

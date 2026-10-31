@@ -14,7 +14,12 @@ from turma.schemas import (
     HorarioPublic,
     Mensagem,
 )
-from turma.security import CurrentUser, get_current_user
+from turma.security import (
+    CurrentUser,
+    exigir_admin,
+    exigir_dono_ou_admin,
+    get_current_user,
+)
 
 router = APIRouter(prefix='/horarios', tags=['professores'])
 
@@ -84,14 +89,8 @@ def check_horario_tem_conflito(
 def create_horario(
     horario: HorarioCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)]
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Permissão negada'
-        )
-
     check_horario_tem_conflito(horario, session)
 
     db_horario = Horario(
@@ -124,11 +123,7 @@ def read_horarios_aluno(
             detail='Aluno não encontrado'
         )
 
-    if current_user.id != db_aluno.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Permissão negada'
-        )
+    exigir_dono_ou_admin(current_user, db_aluno.usuario_id)
 
     db_horarios = session.scalars(
         select(Horario)
@@ -156,11 +151,7 @@ def read_horarios_professor(
             detail='Professor não encontrado'
         )
 
-    if current_user.id != db_professor.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Permissão negada'
-        )
+    exigir_dono_ou_admin(current_user, db_professor.usuario_id)
 
     db_horarios = session.scalars(
         select(Horario)
@@ -175,7 +166,7 @@ def update_horario(
     horario_id: UUID,
     horario: HorarioCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)]
 ):
     db_horario = session.scalar(select(Horario).where(Horario.id == horario_id))
 
@@ -183,12 +174,6 @@ def update_horario(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Horário não encontrado'
-        )
-
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Permissão negada'
         )
 
     check_horario_tem_conflito(horario, session, horario_id)
@@ -210,7 +195,7 @@ def update_horario(
 def delete_horario(
     horario_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)]
 ):
     db_horario = session.scalar(select(Horario).where(Horario.id == horario_id))
 
@@ -218,12 +203,6 @@ def delete_horario(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Horário não encontrado'
-        )
-
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Permissão negada'
         )
 
     session.delete(db_horario)

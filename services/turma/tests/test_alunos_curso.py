@@ -64,7 +64,7 @@ def test_update_aluno_recusa_curso_id_invalido(client, session):
     session.refresh(aluno)
 
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(
-        id=aluno.usuario_id, email='aluno@teste.com', e_admin=False
+        id=aluno.usuario_id, email='aluno@teste.com', e_admin=True
     )
 
     response = client.put(
@@ -142,7 +142,7 @@ def test_update_aluno_com_curso_inexistente_nao_altera_cadastro(
     novo_curso = str(uuid4())
     curso_academico.return_value = None
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(
-        id=aluno.usuario_id, email='aluno@teste.com', e_admin=False
+        id=aluno.usuario_id, email='aluno@teste.com', e_admin=True
     )
 
     response = client.put(
@@ -173,7 +173,7 @@ def test_update_aluno_com_curso_valido(client, session, curso_academico):
 
     novo_curso = '33333333-3333-3333-3333-333333333333'
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(
-        id=aluno.usuario_id, email='aluno@teste.com', e_admin=False
+        id=aluno.usuario_id, email='aluno@teste.com', e_admin=True
     )
 
     response = client.put(

@@ -148,7 +148,7 @@ def test_update_turma(client, session):
     session.commit()
     session.refresh(turma)
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     response = client.put(
         f'/turmas/{turma.id}',
@@ -219,7 +219,7 @@ def test_update_turma_erro_alunos(client, session):
     session.commit()
     session.refresh(turma)
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     response = client.put(
         f'/turmas/{turma.id}',
@@ -248,7 +248,7 @@ def test_delete_turma(client, session):
     session.commit()
     session.refresh(turma)
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     response = client.delete(f'/turmas/{turma.id}')
     assert response.status_code == HTTPStatus.OK
@@ -257,7 +257,7 @@ def test_delete_turma(client, session):
 
 def test_delete_turma_not_found(client):
     uid = uuid4()
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     response = client.delete(f'/turmas/{uuid4()}')
     assert response.status_code == HTTPStatus.NOT_FOUND
@@ -407,7 +407,7 @@ def test_update_turma_persiste_novos_campos_de_oferta(client, session):
     session.refresh(turma)
 
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(
-        id=uid, email='teste@teste.com', e_admin=False
+        id=uid, email='teste@teste.com', e_admin=True
     )
 
     response = client.put(
@@ -472,7 +472,7 @@ def test_create_turma_pelo_professor_responsavel(client, session):
     session.commit()
     session.refresh(professor)
 
-    _usuario_como(uid)
+    _usuario_como(uid, e_admin=True)
     response = client.post(
         '/turmas/',
         json=_payload_turma(professor_id=str(professor.id)),

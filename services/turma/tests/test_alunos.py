@@ -76,7 +76,7 @@ def test_update_aluno(client, session):
     session.add(aluno)
     session.commit()
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     new_uid = uuid4()
     response = client.put(
@@ -90,7 +90,7 @@ def test_update_aluno(client, session):
 
 
 def test_update_aluno_not_found(client):
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
 
     response = client.put(
         f'/alunos/{uuid4()}',
@@ -141,7 +141,7 @@ def test_delete_aluno(client, session):
     session.add(aluno)
     session.commit()
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uid, email='teste@teste.com', e_admin=True)
 
     response = client.delete(f'/alunos/{aluno.id}')
     assert response.status_code == HTTPStatus.OK
@@ -149,7 +149,7 @@ def test_delete_aluno(client, session):
 
 
 def test_delete_aluno_not_found(client):
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
 
     response = client.delete(f'/alunos/{uuid4()}')
     assert response.status_code == HTTPStatus.NOT_FOUND

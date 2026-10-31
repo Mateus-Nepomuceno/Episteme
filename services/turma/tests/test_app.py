@@ -10,7 +10,7 @@ def test_root(client):
     assert response.status_code == HTTPStatus.OK
 
 
-def test_create_aluno(client, current_user_override):
+def test_create_aluno(client):
     uid = str(uuid4())
     response = client.post(
         '/alunos/',

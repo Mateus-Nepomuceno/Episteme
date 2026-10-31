@@ -16,7 +16,12 @@ from turma.schemas import (
     ProfessorList,
     ProfessorPublic,
 )
-from turma.security import CurrentUser, get_current_user
+from turma.security import (
+    CurrentUser,
+    exigir_admin,
+    exigir_dono_ou_admin,
+    get_current_user,
+)
 
 router = APIRouter(prefix='/professores', tags=['professores'])
 
@@ -25,12 +30,8 @@ router = APIRouter(prefix='/professores', tags=['professores'])
 def create_professor(
     professor: ProfessorCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     db_professor = session.scalar(
         select(Professor).where(
@@ -61,23 +62,25 @@ def create_professor(
 def read_professores(
     filter: Annotated[FiltroPaginacao, Depends()],
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     professores = session.scalars(select(Professor).offset(filter.offset).limit(filter.limit)).all()
     return {'professores': professores}
 
 
 @router.get('/{professor_id}', response_model=ProfessorPublic)
-def read_professor(professor_id: UUID, session: Annotated[Session, Depends(get_session)]):
+def read_professor(
+    professor_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
     professor = session.scalar(select(Professor).where(Professor.id == professor_id))
 
     if not professor:
         raise HTTPException(status_code=404, detail='Professor não encontrado')
+
+    exigir_dono_ou_admin(current_user, professor.usuario_id)
 
     return professor
 
@@ -87,7 +90,7 @@ def update_professor(
     professor_id: UUID,
     professor: ProfessorCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_professor = session.scalar(select(Professor).where(Professor.id == professor_id))
 
@@ -95,11 +98,6 @@ def update_professor(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Professor não encontrado'
-        )
-
-    if current_user.id != db_professor.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     try:
@@ -121,18 +119,13 @@ def update_professor(
 def delete_professor(
     professor_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_professor = session.scalar(select(Professor).where(Professor.id == professor_id))
 
     if not db_professor:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Professor não encontrado'
-        )
-
-    if current_user.id != db_professor.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     session.delete(db_professor)
