@@ -459,3 +459,57 @@ def test_update_turma_sem_professor_so_admin_pode(client, session):
     response = client.put(f'/turmas/{turma.id}', json=_payload_turma())
     app.dependency_overrides.clear()
     assert response.status_code == HTTPStatus.OK
+
+
+def _usuario_como(usuario_id, e_admin=False):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=usuario_id, email='usuario@teste.com', e_admin=e_admin
+    )
+
+
+def test_create_turma_pelo_professor_responsavel(client, session):
+    uid = uuid4()
+    professor = Professor(usuario_id=uid, matricula_id='555', ativo=True)
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    _usuario_como(uid)
+    response = client.post(
+        '/turmas/',
+        json=_payload_turma(professor_id=str(professor.id)),
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.CREATED
+
+
+def test_create_turma_por_outro_professor_e_negado(client, session):
+    professor = Professor(usuario_id=uuid4(), matricula_id='556', ativo=True)
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    _usuario_como(uuid4())
+    response = client.post(
+        '/turmas/',
+        json=_payload_turma(professor_id=str(professor.id)),
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_create_turma_sem_professor_so_admin(client, session):
+    _usuario_como(uuid4())
+    response = client.post('/turmas/', json=_payload_turma())
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_create_turma_sem_autenticacao(client, session):
+    app.dependency_overrides.pop(get_current_user, None)
+    response = client.post('/turmas/', json=_payload_turma())
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

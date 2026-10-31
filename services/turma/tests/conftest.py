@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from turma.app import app
 from turma.database import get_session
 from turma.models import table_registry
-from turma.security import CurrentUser
+from turma.security import CurrentUser, get_current_user
 
 
 @pytest.fixture
@@ -59,3 +59,12 @@ def curso_academico():
         return_value={'ativo': True},
     ) as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def usuario_administrador():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='admin@teste.com', e_admin=True
+    )
+    yield
+    app.dependency_overrides.pop(get_current_user, None)

@@ -130,7 +130,11 @@ def _montar_oferta(turma: Turma) -> TurmaOfertaPublic:
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=TurmaPublic)
-def create_turma(turma: TurmaCreate, session: Annotated[Session, Depends(get_session)]):
+def create_turma(
+    turma: TurmaCreate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
     db_turma = session.scalar(
         select(Turma).where(
             (Turma.nome == turma.nome) & (Turma.professor_id == turma.professor_id)
@@ -151,6 +155,11 @@ def create_turma(turma: TurmaCreate, session: Annotated[Session, Depends(get_ses
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail='Professor não existe'
             )
+
+    if not _pode_gerenciar_turma(current_user, professor):
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
 
     alunos: list[Aluno] = list(
         session.scalars(
