@@ -16,7 +16,7 @@ from academico.schemas import (
     FiltroPaginacao,
     Mensagem,
 )
-from academico.security import CurrentUser, get_current_user
+from academico.security import CurrentUser, exigir_admin
 
 router = APIRouter(prefix='/cursos', tags=['cursos'])
 
@@ -25,12 +25,8 @@ router = APIRouter(prefix='/cursos', tags=['cursos'])
 def create_curso(
     curso: CursoCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     db_curso = session.scalar(
         select(Curso).where(Curso.codigo == curso.codigo)
@@ -91,18 +87,13 @@ def update_curso(
     curso_id: UUID,
     curso: CursoCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_curso = session.scalar(select(Curso).where(Curso.id == curso_id))
 
     if not db_curso:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Curso não encontrado'
-        )
-
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     db_curso.codigo = curso.codigo
@@ -130,18 +121,13 @@ def update_curso(
 def delete_curso(
     curso_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_curso = session.scalar(select(Curso).where(Curso.id == curso_id))
 
     if not db_curso:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Curso não encontrado'
-        )
-
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     session.delete(db_curso)

@@ -1,15 +1,26 @@
 from datetime import datetime, time, timezone
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_serializer,
+    PlainSerializer,
     field_validator,
     model_validator,
 )
+
+MENSAGEM_FUSO_HORARIO = (
+    "A data deve incluir o fuso horário, como -03:00 ou +00:00"
+)
+MENSAGEM_INTERVALO_INVALIDO = "A data final deve ser posterior à data inicial"
+
+
+def _em_utc(valor: datetime) -> datetime:
+    if valor.tzinfo is None:
+        return valor.replace(tzinfo=timezone.utc)
+    return valor.astimezone(timezone.utc)
 
 
 class Mensagem(BaseModel):
@@ -85,13 +96,6 @@ class CursoList(BaseModel):
     cursos: list[CursoPublic]
 
 
-class CadastroAcademicoResponse(BaseModel):
-    mensagem: str
-    usuario_id: UUID
-    aluno_id: UUID
-    curso_id: str
-
-
 class SolicitacaoMatriculaCreate(BaseModel):
     periodo_letivo: str = Field(pattern=r'^\d{4}\.[12]$')
     turmas_ids: list[UUID] = Field(min_length=1)
@@ -138,39 +142,28 @@ class PeriodoMatriculaCreate(BaseModel):
     @classmethod
     def normalizar_data(cls, valor: datetime) -> datetime:
         if valor.tzinfo is None or valor.utcoffset() is None:
-            raise ValueError(
-                "A data deve incluir o fuso horário, "
-                "como -03:00 ou +00:00"
-            )
+            raise ValueError(MENSAGEM_FUSO_HORARIO)
 
         return valor.astimezone(timezone.utc).replace(tzinfo=None)
 
     @model_validator(mode="after")
     def validar_intervalo(self):
         if self.data_final <= self.data_inicial:
-            raise ValueError(
-                "A data final deve ser posterior à data inicial"
-            )
+            raise ValueError(MENSAGEM_INTERVALO_INVALIDO)
         return self
 
 
 class PeriodoMatriculaResponse(BaseModel):
     id: UUID
     periodo_letivo: str
-    data_inicial: datetime
-    data_final: datetime
+    data_inicial: Annotated[datetime, PlainSerializer(_em_utc)]
+    data_final: Annotated[datetime, PlainSerializer(_em_utc)]
     cursos_ids: list[UUID]
     tipo: Literal["regular", "ajuste", "extraordinario"]
     turmas_ids: list[UUID]
     status: Literal["agendado", "aberto", "encerrado"]
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_serializer("data_inicial", "data_final")
-    def serializar_data(self, valor: datetime) -> datetime:
-        if valor.tzinfo is None:
-            return valor.replace(tzinfo=timezone.utc)
-        return valor.astimezone(timezone.utc)
 
 
 class PeriodoMatriculaCriadoResponse(PeriodoMatriculaResponse):

@@ -1,5 +1,3 @@
-import asyncio
-from contextlib import asynccontextmanager, suppress
 from http import HTTPStatus
 
 import httpx
@@ -11,23 +9,11 @@ from academico.routers.periodos_matricula import (
 )
 from academico.schemas import Mensagem
 from academico.settings import Settings
-from academico.tasks.periodos_matricula_scheduler import (
-    executar_scheduler_periodos,
-)
 
 settings = Settings()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    tarefa = asyncio.create_task(executar_scheduler_periodos())
-    yield
-    tarefa.cancel()
-    with suppress(asyncio.CancelledError):
-        await tarefa
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 
 @app.post('/auth/token', include_in_schema=False)

@@ -8,27 +8,19 @@ from sqlalchemy.orm import Session
 
 from academico.database import get_session
 from academico.models import Curso, PeriodoMatricula
+from academico.periodos import atualizar_status
 from academico.schemas import (
     PeriodoMatriculaCreate,
     PeriodoMatriculaCriadoResponse,
     PeriodoMatriculaResponse,
     PeriodosMatriculaList,
 )
-from academico.security import CurrentUser, get_current_user
-from academico.services.periodos_matricula_service import atualizar_status
+from academico.security import CurrentUser, exigir_admin, get_current_user
 
 router = APIRouter(
     prefix="/periodos-matricula",
     tags=["periodos-matricula"],
 )
-
-
-def exigir_coordenacao(current_user: CurrentUser) -> None:
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail="Apenas a coordenação pode configurar períodos",
-        )
 
 
 @router.post(
@@ -39,12 +31,10 @@ def exigir_coordenacao(current_user: CurrentUser) -> None:
 def configurar_periodo(
     dados: PeriodoMatriculaCreate,
     current_user: Annotated[
-        CurrentUser, Depends(get_current_user)
+        CurrentUser, Depends(exigir_admin)
     ],
     session: Annotated[Session, Depends(get_session)],
 ):
-    exigir_coordenacao(current_user)
-
     cursos = session.scalars(
         select(Curso).where(Curso.id.in_(dados.cursos_ids))
     ).all()
@@ -164,12 +154,10 @@ def consultar_periodo(
 def encerrar_periodo(
     periodo_id: UUID,
     current_user: Annotated[
-        CurrentUser, Depends(get_current_user)
+        CurrentUser, Depends(exigir_admin)
     ],
     session: Annotated[Session, Depends(get_session)],
 ):
-    exigir_coordenacao(current_user)
-
     periodo = session.get(PeriodoMatricula, periodo_id)
 
     if periodo is None:

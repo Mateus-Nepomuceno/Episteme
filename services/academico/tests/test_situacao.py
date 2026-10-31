@@ -15,7 +15,7 @@ def _resposta(status_code=200, json_side_effect=None, json_value=None):
 
 def test_situacao_escapa_matricula_na_url(client):
     with patch(
-        'academico.routers.situacao.httpx.get',
+        'academico.turma_client.httpx.get',
         return_value=_resposta(status_code=HTTPStatus.NOT_FOUND),
     ) as requisicao:
         resposta = client.get('/matricula/situacao/2026001%3Fx%3D1')
@@ -27,7 +27,7 @@ def test_situacao_escapa_matricula_na_url(client):
 
 def test_situacao_resposta_que_nao_e_json_retorna_502(client):
     with patch(
-        'academico.routers.situacao.httpx.get',
+        'academico.turma_client.httpx.get',
         return_value=_resposta(
             json_side_effect=ValueError('não é JSON'),
         ),

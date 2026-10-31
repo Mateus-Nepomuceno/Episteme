@@ -269,3 +269,39 @@ def test_create_disciplina_sem_autenticacao(client, session):
     )
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_update_e_delete_disciplina_por_usuario_comum_sao_negados(
+    client, session
+):
+    disciplina = Disciplina(
+        codigo='DIS-Z',
+        nome='Disciplina Z',
+        carga_horaria=60,
+        tipo='obrigatoria',
+        departamento='Computação',
+    )
+    session.add(disciplina)
+    session.commit()
+    session.refresh(disciplina)
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    atualizacao = client.put(
+        f'/disciplinas/{disciplina.id}',
+        json={
+            'codigo': 'DIS-Z',
+            'nome': 'Alterada',
+            'carga_horaria': 60,
+            'tipo': 'obrigatoria',
+            'departamento': 'Computação',
+        },
+    )
+    exclusao = client.delete(f'/disciplinas/{disciplina.id}')
+    app.dependency_overrides.clear()
+
+    assert atualizacao.status_code == HTTPStatus.FORBIDDEN
+    assert exclusao.status_code == HTTPStatus.FORBIDDEN
+    session.refresh(disciplina)
+    assert disciplina.nome == 'Disciplina Z'

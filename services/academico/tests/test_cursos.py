@@ -307,3 +307,42 @@ def test_create_curso_sem_autenticacao(client, session):
     )
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_update_e_delete_curso_por_usuario_comum_sao_negados(client, session):
+    curso = Curso(
+        codigo='CUR-Z',
+        nome='Curso Z',
+        tipo_formacao='graduacao',
+        modalidade='presencial',
+        nivel_academico='graduacao',
+        carga_horaria_total=2400,
+        campus='Central',
+        ativo=True,
+    )
+    session.add(curso)
+    session.commit()
+    session.refresh(curso)
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    atualizacao = client.put(
+        f'/cursos/{curso.id}',
+        json={
+            'codigo': 'CUR-Z',
+            'nome': 'Alterado',
+            'tipo_formacao': 'graduacao',
+            'modalidade': 'presencial',
+            'nivel_academico': 'graduacao',
+            'carga_horaria_total': 2400,
+            'campus': 'Central',
+        },
+    )
+    exclusao = client.delete(f'/cursos/{curso.id}')
+    app.dependency_overrides.clear()
+
+    assert atualizacao.status_code == HTTPStatus.FORBIDDEN
+    assert exclusao.status_code == HTTPStatus.FORBIDDEN
+    session.refresh(curso)
+    assert curso.nome == 'Curso Z'
