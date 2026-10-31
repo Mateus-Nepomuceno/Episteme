@@ -40,18 +40,6 @@ def session():
     engine.dispose()
 
 
-@pytest.fixture
-def current_user_override():
-    def override():
-        return CurrentUser(id=uuid4(), email='maria@teste.com', e_admin=False)
-
-    app.dependency_overrides[
-        app.dependency_overrides.get('get_current_user', None)
-    ] = override
-    yield
-    app.dependency_overrides.clear()
-
-
 @pytest.fixture(autouse=True)
 def usuario_administrador():
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(

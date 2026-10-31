@@ -109,3 +109,13 @@ def test_listar_ofertas_pagina_ate_o_fim():
 
     assert len(turmas) == TAMANHO_PAGINA_TESTE + 1
     assert requisicao.call_count == 2 * 1
+
+
+def test_permissao_negada_no_turma_vira_403():
+    with patch(
+        'academico.turma_client.httpx.get',
+        return_value=resposta(status_code=HTTPStatus.FORBIDDEN),
+    ), pytest.raises(HTTPException) as excinfo:
+        buscar_aluno_por_matricula('2026001', 'token')
+
+    assert excinfo.value.status_code == HTTPStatus.FORBIDDEN

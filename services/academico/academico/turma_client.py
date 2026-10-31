@@ -18,6 +18,7 @@ MSG_ERRO = 'O serviço de turma retornou um erro'
 MSG_RESPOSTA_INVALIDA = 'O serviço de turma retornou uma resposta inválida'
 MSG_ALUNO_NAO_ENCONTRADO = 'Cadastro de aluno não encontrado'
 MSG_LISTAGEM_INVALIDA = 'A listagem de turmas retornada é inválida'
+MSG_PERMISSAO_NEGADA = 'Permissão negada'
 
 
 def _requisitar(caminho, token, params=None):
@@ -47,6 +48,11 @@ def _buscar_aluno(caminho, token):
     if resposta.status_code == HTTPStatus.NOT_FOUND:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=MSG_ALUNO_NAO_ENCONTRADO
+        )
+
+    if resposta.status_code == HTTPStatus.FORBIDDEN:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail=MSG_PERMISSAO_NEGADA
         )
 
     if resposta.is_error:
@@ -81,6 +87,11 @@ def listar_ofertas(filtros: dict, token: str) -> list:
             token,
             params={**filtros, 'offset': offset, 'limit': TAMANHO_PAGINA},
         )
+
+        if resposta.status_code == HTTPStatus.FORBIDDEN:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN, detail=MSG_PERMISSAO_NEGADA
+            )
 
         if resposta.is_error:
             raise HTTPException(
