@@ -15,6 +15,7 @@ from identidade.schemas import (
     UsuarioPublic,
 )
 from identidade.security import (
+    exigir_admin,
     get_current_user,
     get_password_hash,
 )
@@ -122,7 +123,7 @@ def update_usuario(
 def delete_usuario(
     usuario_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[Usuario, Depends(get_current_user)],
+    current_user: Annotated[Usuario, Depends(exigir_admin)],
 ):
     db_usuario = session.scalar(
         select(Usuario).where(Usuario.id == usuario_id)
@@ -131,11 +132,6 @@ def delete_usuario(
     if not db_usuario:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Usuário não encontrado'
-        )
-
-    if current_user.id != usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     session.delete(db_usuario)

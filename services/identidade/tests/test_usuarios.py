@@ -158,18 +158,26 @@ def test_update_usuario_not_found(client, user_token):
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_delete_usuario(client, user, user_token):
+def test_delete_usuario_proprio_usuario_e_negado(client, user, user_token):
     response = client.delete(
         f'/usuarios/{user.id}',
         headers={'Authorization': f'Bearer {user_token}'},
     )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_delete_usuario_por_administrador(client, user, admin_token):
+    response = client.delete(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {admin_token}'},
+    )
     assert response.status_code == HTTPStatus.OK
 
 
-def test_delete_usuario_not_found(client, user_token):
+def test_delete_usuario_not_found(client, admin_token):
     response = client.delete(
         f'/usuarios/{uuid4()}',
-        headers={'Authorization': f'Bearer {user_token}'},
+        headers={'Authorization': f'Bearer {admin_token}'},
     )
     assert response.status_code == HTTPStatus.NOT_FOUND
 
