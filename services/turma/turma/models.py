@@ -89,7 +89,7 @@ class TurmaAluno:
     turma_id: Mapped[UUID] = mapped_column(
         ForeignKey("turmas.id"), primary_key=True
     )
-    aluno_id: Mapped[int] = mapped_column(
+    aluno_id: Mapped[UUID] = mapped_column(
         ForeignKey("alunos.id"), primary_key=True
     )
 

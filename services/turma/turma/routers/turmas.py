@@ -127,6 +127,7 @@ def update_turma(
     db_turma.documentos = turma.documentos
     db_turma.avisos = turma.avisos
     db_turma.alunos = alunos
+    session.commit()
     session.refresh(db_turma)
     return db_turma
 
