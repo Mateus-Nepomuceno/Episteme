@@ -27,7 +27,7 @@ from academico.schemas import (
     TurmaDisponivelResponse,
     TurmasDisponiveisResponse,
 )
-from academico.security import CurrentUser, get_current_user
+from academico.security import CurrentUser, exigir_admin, get_current_user
 from academico.periodos import atualizar_status
 from academico.settings import Settings
 
@@ -272,15 +272,10 @@ def atualizar_observacao(
     dados: ObservacaoMatriculaUpdate,
     current_user: Annotated[
         CurrentUser,
-        Depends(get_current_user),
+        Depends(exigir_admin),
     ],
     session: Annotated[Session, Depends(get_session)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Apenas a coordenação pode alterar a observação',
-        )
 
     solicitacao = session.scalar(
         select(SolicitacaoMatricula).where(

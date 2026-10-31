@@ -1,6 +1,8 @@
 from http import HTTPStatus
 from uuid import UUID
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError, decode
@@ -38,3 +40,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
         if not email or not user_id or e_admin is None:
             raise credentials_exception
         return CurrentUser(id=user_id, email=email, e_admin=e_admin)
+
+
+def exigir_admin(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> CurrentUser:
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+    return current_user

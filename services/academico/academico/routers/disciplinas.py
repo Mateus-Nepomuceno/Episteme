@@ -16,7 +16,7 @@ from academico.schemas import (
     FiltroPaginacao,
     Mensagem,
 )
-from academico.security import CurrentUser, get_current_user
+from academico.security import CurrentUser, exigir_admin
 
 router = APIRouter(prefix='/disciplinas', tags=['disciplinas'])
 
@@ -27,12 +27,8 @@ router = APIRouter(prefix='/disciplinas', tags=['disciplinas'])
 def create_disciplina(
     disciplina: DisciplinaCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     db_disciplina = session.scalar(
         select(Disciplina).where(Disciplina.codigo == disciplina.codigo)
@@ -96,7 +92,7 @@ def update_disciplina(
     disciplina_id: UUID,
     disciplina: DisciplinaCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_disciplina = session.scalar(
         select(Disciplina).where(Disciplina.id == disciplina_id)
@@ -108,10 +104,6 @@ def update_disciplina(
             detail='Disciplina não encontrada',
         )
 
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     db_disciplina.codigo = disciplina.codigo
     db_disciplina.nome = disciplina.nome
@@ -138,7 +130,7 @@ def update_disciplina(
 def delete_disciplina(
     disciplina_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_disciplina = session.scalar(
         select(Disciplina).where(Disciplina.id == disciplina_id)
@@ -150,10 +142,6 @@ def delete_disciplina(
             detail='Disciplina não encontrada',
         )
 
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     session.delete(db_disciplina)
     session.commit()
