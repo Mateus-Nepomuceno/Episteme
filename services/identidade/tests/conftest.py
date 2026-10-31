@@ -44,8 +44,8 @@ def user(session):
         nome='joana',
         senha=get_password_hash('senha_limpa'),
         email='joana@teste.com',
-        cpf='12345678900',
-        telefone='(11) 99999-9999',
+        cpf='123.456.789-09',
+        telefone='+5511999999999',
     )
     session.add(novo_usuario)
     session.commit()
@@ -67,8 +67,8 @@ def admin(session):
         nome='admin_joana',
         senha=get_password_hash('senha_admin'),
         email='admin@teste.com',
-        cpf='09876543211',
-        telefone='(11) 88888-8888',
+        cpf='529.982.247-25',
+        telefone='+5511888888888',
         e_admin=True,
     )
     session.add(novo_admin)
