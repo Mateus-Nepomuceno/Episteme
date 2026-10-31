@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -62,7 +63,7 @@ def test_coordenacao_configura_periodo(
         },
     )
 
-    assert resposta.status_code == 201
+    assert resposta.status_code == HTTPStatus.CREATED
     assert resposta.json()["mensagem"] == (
         "Período de matrícula configurado com sucesso"
     )
@@ -89,7 +90,7 @@ def test_aluno_nao_pode_configurar_periodo(
         },
     )
 
-    assert resposta.status_code == 403
+    assert resposta.status_code == HTTPStatus.FORBIDDEN
 
 
 def test_periodo_rejeita_data_final_anterior_ao_inicio(
@@ -112,7 +113,7 @@ def test_periodo_rejeita_data_final_anterior_ao_inicio(
         },
     )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 def test_periodo_rejeita_tipo_invalido(
@@ -135,7 +136,7 @@ def test_periodo_rejeita_tipo_invalido(
         },
     )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 def criar_periodo_teste(session, inicio, fim, status="agendado"):
@@ -170,7 +171,7 @@ def test_periodo_passou_a_data_inicial_fica_aberto(
         f"/periodos-matricula/{periodo.id}"
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert resposta.json()["status"] == "aberto"
 
 
@@ -190,7 +191,7 @@ def test_periodo_passou_a_data_final_fica_encerrado(
         f"/periodos-matricula/{periodo.id}"
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert resposta.json()["status"] == "encerrado"
 
 
@@ -210,7 +211,7 @@ def test_coordenacao_pode_encerrar_periodo_manualmente(
         f"/periodos-matricula/{periodo.id}/encerrar"
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert resposta.json()["status"] == "encerrado"
 
 
@@ -285,7 +286,7 @@ def test_solicitar_matricula_sem_periodo_aberto_retorna_conflito(
             },
         )
 
-    assert resposta.status_code == 409
+    assert resposta.status_code == HTTPStatus.CONFLICT
     assert "Não existe período de matrícula aberto" in (
         resposta.json()["detail"]
     )
@@ -316,7 +317,7 @@ def test_solicitar_matricula_curso_nao_autorizado_retorna_forbidden(
             },
         )
 
-    assert resposta.status_code == 403
+    assert resposta.status_code == HTTPStatus.FORBIDDEN
     assert resposta.json()["detail"] == (
         "O curso do aluno não está autorizado neste período de matrícula"
     )
@@ -349,22 +350,27 @@ def test_solicitar_matricula_turma_nao_permitida_retorna_422(
             },
         )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert resposta.json()["detail"] == (
         "Uma ou mais turmas solicitadas não estão disponíveis neste período"
     )
 
 
-def criar_periodo_para_teste_listagem(
-    session, curso_id, turma_ids, periodo_letivo="2026.2",
-    data_inicio=None, data_fim=None,
-):
+CAPACIDADE_TURMA = 30
+VAGAS_TURMA = 12
+
+
+def criar_periodo_para_teste_listagem(session, curso_id, turma_ids, intervalo=None):
     agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    data_inicio, data_fim = intervalo or (
+        agora - timedelta(hours=1),
+        agora + timedelta(days=2),
+    )
 
     periodo = PeriodoMatricula(
-        periodo_letivo=periodo_letivo,
-        data_inicial=data_inicio or agora - timedelta(hours=1),
-        data_final=data_fim or agora + timedelta(days=2),
+        periodo_letivo="2026.2",
+        data_inicial=data_inicio,
+        data_final=data_fim,
         cursos_ids=[str(curso_id)],
         tipo="regular",
         turmas_ids=[str(turma_id) for turma_id in turma_ids],
@@ -380,7 +386,7 @@ def criar_periodo_para_teste_listagem(
 def mock_resposta_turma(payload, status_code=200):
     resposta = Mock()
     resposta.status_code = status_code
-    resposta.is_error = status_code >= 400
+    resposta.is_error = status_code >= HTTPStatus.BAD_REQUEST
     resposta.json.return_value = payload
     return resposta
 
@@ -439,15 +445,15 @@ def test_listar_turmas_disponiveis_retorna_oferta_completa(
             params={"periodo_letivo": "2026.2"},
         )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert len(resposta.json()["turmas"]) == 1
     turma = resposta.json()["turmas"][0]
     assert turma["id"] == str(turma_permitida)
     assert turma["nome"] == "Turma A"
     assert turma["codigo"] == "MAT101"
     assert turma["disciplina"] == "Matemática"
-    assert turma["capacidade"] == 30
-    assert turma["vagas_disponiveis"] == 12
+    assert turma["capacidade"] == CAPACIDADE_TURMA
+    assert turma["vagas_disponiveis"] == VAGAS_TURMA
     assert turma["professor_matricula_id"] == "P001"
     assert turma["professor"]["matricula_id"] == "P001"
     assert turma["horarios"] == [
@@ -491,7 +497,7 @@ def test_listar_turmas_encaminha_filtros_ao_servico_turma(
             },
         )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     url_ofertas = requisicao.call_args_list[1].args[0]
     parametros = requisicao.call_args_list[1].kwargs["params"]
     assert url_ofertas.endswith("/turmas/ofertas")
@@ -532,7 +538,7 @@ def test_listar_turmas_aceita_turma_sem_professor(
             params={"periodo_letivo": "2026.2"},
         )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     turma = resposta.json()["turmas"][0]
     assert turma["professor"] is None
     assert turma["professor_matricula_id"] is None
@@ -554,7 +560,7 @@ def test_listar_turmas_com_horario_invertido_retorna_erro(
             },
         )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     requisicao.assert_not_called()
 
 
@@ -584,7 +590,7 @@ def test_listar_turmas_com_resposta_invalida_do_servico_turma(
             params={"periodo_letivo": "2026.2"},
         )
 
-    assert resposta.status_code == 502
+    assert resposta.status_code == HTTPStatus.BAD_GATEWAY
 
 
 def test_listar_turmas_sem_periodo_aberto_retorna_conflito(
@@ -599,8 +605,7 @@ def test_listar_turmas_sem_periodo_aberto_retorna_conflito(
         session,
         curso.id,
         [uuid4()],
-        data_inicio=agora - timedelta(days=3),
-        data_fim=agora - timedelta(hours=1),
+        intervalo=(agora - timedelta(days=3), agora - timedelta(hours=1)),
     )
 
     with patch(
@@ -611,7 +616,7 @@ def test_listar_turmas_sem_periodo_aberto_retorna_conflito(
             params={"periodo_letivo": "2026.2"},
         )
 
-    assert resposta.status_code == 409
+    assert resposta.status_code == HTTPStatus.CONFLICT
     requisicao.assert_not_called()
 
 
@@ -642,7 +647,7 @@ def test_listar_turmas_curso_nao_autorizado_retorna_forbidden(
             params={"periodo_letivo": "2026.2"},
         )
 
-    assert resposta.status_code == 403
+    assert resposta.status_code == HTTPStatus.FORBIDDEN
     assert resposta.json()["detail"] == (
         "O curso do aluno não está autorizado neste período"
     )

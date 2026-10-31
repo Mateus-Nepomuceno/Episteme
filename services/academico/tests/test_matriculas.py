@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -55,6 +56,9 @@ def criar_solicitacao(session):
     return _criar
 
 
+TOTAL_SOLICITACOES = 2
+
+
 def test_aluno_consulta_somente_suas_solicitacoes(
     client, autenticar, criar_solicitacao
 ):
@@ -64,7 +68,7 @@ def test_aluno_consulta_somente_suas_solicitacoes(
 
     resposta = client.get("/matricula/solicitacoes")
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
 
     solicitacoes = resposta.json()["solicitacoes"]
 
@@ -82,8 +86,8 @@ def test_coordenacao_consulta_todas_as_solicitacoes(
 
     resposta = client.get("/matricula/solicitacoes")
 
-    assert resposta.status_code == 200
-    assert len(resposta.json()["solicitacoes"]) == 2
+    assert resposta.status_code == HTTPStatus.OK
+    assert len(resposta.json()["solicitacoes"]) == TOTAL_SOLICITACOES
 
 
 def test_filtrar_solicitacoes_por_periodo(
@@ -99,7 +103,7 @@ def test_filtrar_solicitacoes_por_periodo(
         params={"periodo_letivo": "2026.2"},
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
 
     solicitacoes = resposta.json()["solicitacoes"]
 
@@ -119,7 +123,7 @@ def test_filtrar_solicitacoes_por_protocolo(
         params={"protocolo": str(solicitacao.protocolo)},
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
 
     solicitacoes = resposta.json()["solicitacoes"]
 
@@ -136,7 +140,7 @@ def test_protocolo_inexistente_retorna_404(
         f"/matricula/solicitacoes/{uuid4()}"
     )
 
-    assert resposta.status_code == 404
+    assert resposta.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_aluno_nao_consulta_solicitacao_de_outro(
@@ -152,7 +156,7 @@ def test_aluno_nao_consulta_solicitacao_de_outro(
         f"/matricula/solicitacoes/{solicitacao_outro_aluno.protocolo}"
     )
 
-    assert resposta.status_code == 404
+    assert resposta.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_coordenacao_consulta_solicitacao_por_protocolo(
@@ -166,7 +170,7 @@ def test_coordenacao_consulta_solicitacao_por_protocolo(
         f"/matricula/solicitacoes/{solicitacao.protocolo}"
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert resposta.json()["protocolo"] == str(solicitacao.protocolo)
 
 
@@ -225,7 +229,7 @@ def test_solicitar_matricula_com_turma_simulada(
             },
         )
 
-    assert resposta.status_code == 201
+    assert resposta.status_code == HTTPStatus.CREATED
     assert resposta.json()["usuario_id"] == str(usuario.id)
     assert resposta.json()["aluno_id"] == str(aluno_id)
     assert resposta.json()["curso_id"] == str(curso.id)
@@ -251,7 +255,7 @@ def test_filtrar_solicitacoes_por_aluno(
         params={"aluno_id": str(aluno_id)},
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
 
     solicitacoes = resposta.json()["solicitacoes"]
 
@@ -271,7 +275,7 @@ def test_coordenacao_atualiza_observacao(
         json={"observacao": "Documentação conferida."},
     )
 
-    assert resposta.status_code == 200
+    assert resposta.status_code == HTTPStatus.OK
     assert resposta.json()["observacao"] == "Documentação conferida."
     assert resposta.json()["protocolo"] == str(solicitacao.protocolo)
 
@@ -290,7 +294,7 @@ def test_aluno_nao_pode_atualizar_observacao(
         json={"observacao": "Tentativa de alteração."},
     )
 
-    assert resposta.status_code == 403
+    assert resposta.status_code == HTTPStatus.FORBIDDEN
     assert solicitacao.observacao is None
 
 
@@ -306,7 +310,7 @@ def test_atualizar_observacao_protocolo_inexistente(
         json={"observacao": "Teste."},
     )
 
-    assert resposta.status_code == 404
+    assert resposta.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_solicitar_matricula_timeout_turma(client, autenticar):
@@ -324,7 +328,7 @@ def test_solicitar_matricula_timeout_turma(client, autenticar):
             },
         )
 
-    assert resposta.status_code == 504
+    assert resposta.status_code == HTTPStatus.GATEWAY_TIMEOUT
     assert resposta.json()["detail"] == (
         "O serviço de turma demorou para responder"
     )
@@ -347,7 +351,7 @@ def test_solicitar_matricula_falha_conexao_turma(
             },
         )
 
-    assert resposta.status_code == 503
+    assert resposta.status_code == HTTPStatus.SERVICE_UNAVAILABLE
     assert resposta.json()["detail"] == (
         "Não foi possível acessar o serviço de turma"
     )
@@ -374,7 +378,7 @@ def test_solicitar_matricula_aluno_nao_encontrado(
             },
         )
 
-    assert resposta.status_code == 404
+    assert resposta.status_code == HTTPStatus.NOT_FOUND
     assert resposta.json()["detail"] == (
         "Cadastro de aluno não encontrado"
     )
@@ -401,7 +405,7 @@ def test_solicitar_matricula_erro_interno_turma(
             },
         )
 
-    assert resposta.status_code == 502
+    assert resposta.status_code == HTTPStatus.BAD_GATEWAY
     assert resposta.json()["detail"] == (
         "O serviço de turma retornou um erro"
     )
@@ -432,7 +436,7 @@ def test_solicitar_matricula_ids_invalidos_turma(
             },
         )
 
-    assert resposta.status_code == 502
+    assert resposta.status_code == HTTPStatus.BAD_GATEWAY
     assert resposta.json()["detail"] == (
         "O serviço de turma retornou identificadores inválidos"
     )
@@ -463,7 +467,7 @@ def test_solicitar_matricula_curso_nao_cadastrado(
             },
         )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert resposta.json()["detail"] == (
         "O curso do aluno não está cadastrado no serviço acadêmico"
     )
