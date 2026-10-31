@@ -10,6 +10,9 @@ from turma.settings import Settings
 
 settings = Settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
+oauth2_scheme_opcional = OAuth2PasswordBearer(
+    tokenUrl='/auth/token', auto_error=False
+)
 
 
 class CurrentUser(BaseModel):
@@ -36,3 +39,15 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
         if not email or not user_id or e_admin is None:
             raise credentials_exception
         return CurrentUser(id=user_id, email=email, e_admin=e_admin)
+
+
+def get_usuario_opcional(
+    token: str | None = Depends(oauth2_scheme_opcional),
+) -> CurrentUser | None:
+    if token is None:
+        return None
+
+    try:
+        return get_current_user(token)
+    except HTTPException:
+        return None

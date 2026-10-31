@@ -22,7 +22,7 @@ from turma.schemas import (
     TurmaOfertaPublic,
     TurmaPublic,
 )
-from turma.security import CurrentUser, get_current_user
+from turma.security import CurrentUser, get_current_user, get_usuario_opcional
 
 router = APIRouter(prefix='/turmas', tags=['turmas'])
 
@@ -43,6 +43,15 @@ def _pode_gerenciar_turma(
         return True
 
     return professor is not None and professor.usuario_id == current_user.id
+
+
+def _turma_visivel(turma: Turma, current_user: CurrentUser | None) -> TurmaPublic:
+    dados = TurmaPublic.model_validate(turma)
+
+    if current_user is not None and _pode_gerenciar_turma(current_user, turma.professor):
+        return dados
+
+    return dados.model_copy(update={'alunos': []})
 
 
 def _buscar_professor(
@@ -193,9 +202,13 @@ def create_turma(
 
 
 @router.get('/', response_model=TurmaList)
-def read_turmas(filter: Annotated[FiltroPaginacao, Depends()], session: Annotated[Session, Depends(get_session)]):
+def read_turmas(
+    filter: Annotated[FiltroPaginacao, Depends()],
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser | None, Depends(get_usuario_opcional)],
+):
     turmas = session.scalars(select(Turma).offset(filter.offset).limit(filter.limit)).all()
-    return {'turmas': turmas}
+    return {'turmas': [_turma_visivel(turma, current_user) for turma in turmas]}
 
 
 @router.get('/ofertas', response_model=TurmaOfertaList)
@@ -235,13 +248,17 @@ def read_ofertas_turmas(
 
 
 @router.get('/{turma_id}', response_model=TurmaPublic)
-def read_turma(turma_id: UUID, session: Annotated[Session, Depends(get_session)]):
+def read_turma(
+    turma_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser | None, Depends(get_usuario_opcional)],
+):
     turma = session.scalar(select(Turma).where(Turma.id == turma_id))
 
     if not turma:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Turma não encontrada')
 
-    return turma
+    return _turma_visivel(turma, current_user)
 
 
 @router.put('/{turma_id}', response_model=TurmaPublic)

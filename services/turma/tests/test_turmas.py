@@ -1,9 +1,9 @@
 from http import HTTPStatus
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from turma.app import app
 from turma.models import Aluno, Professor, Turma
-from turma.security import CurrentUser, get_current_user
+from turma.security import CurrentUser, get_current_user, get_usuario_opcional
 
 CURSO_ID = str(uuid4())
 CAPACIDADE_TURMA = 30
@@ -511,3 +511,93 @@ def test_create_turma_sem_autenticacao(client, session):
     response = client.post('/turmas/', json=_payload_turma())
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def _turma_com_aluno(session):
+    professor = Professor(usuario_id=uuid4(), matricula_id='PV1', ativo=True)
+    aluno = Aluno(
+        usuario_id=uuid4(),
+        matricula_id='MATRICULA-PRIVADA',
+        curso_id=CURSO_ID,
+        ativo=True,
+    )
+    session.add_all([professor, aluno])
+    session.commit()
+    session.refresh(professor)
+    session.refresh(aluno)
+
+    turma = Turma(
+        nome='Turma com aluno',
+        materia='Mat',
+        professor_id=professor.id,
+        professor=professor,
+        alunos=[aluno],
+        avisos=[],
+        documentos=[],
+        codigo='MAT1',
+        curso_id=UUID(CURSO_ID),
+        periodo_letivo='2026.2',
+        capacidade=5,
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+    return turma, professor
+
+
+def test_read_turma_anonimo_nao_ve_alunos(client, session):
+    turma, _ = _turma_com_aluno(session)
+    app.dependency_overrides.pop(get_current_user, None)
+
+    response = client.get(f'/turmas/{turma.id}')
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['alunos'] == []
+    assert 'MATRICULA-PRIVADA' not in response.text
+
+
+def test_read_turma_outro_usuario_nao_ve_alunos(client, session):
+    turma, _ = _turma_com_aluno(session)
+    app.dependency_overrides[get_usuario_opcional] = lambda: CurrentUser(
+        id=uuid4(), email='outro@teste.com', e_admin=False
+    )
+
+    response = client.get(f'/turmas/{turma.id}')
+    app.dependency_overrides.clear()
+
+    assert response.json()['alunos'] == []
+
+
+def test_read_turma_professor_responsavel_ve_alunos(client, session):
+    turma, professor = _turma_com_aluno(session)
+    app.dependency_overrides[get_usuario_opcional] = lambda: CurrentUser(
+        id=professor.usuario_id, email='prof@teste.com', e_admin=False
+    )
+
+    response = client.get(f'/turmas/{turma.id}')
+    app.dependency_overrides.clear()
+
+    assert len(response.json()['alunos']) == 1
+
+
+def test_read_turma_admin_ve_alunos(client, session):
+    turma, _ = _turma_com_aluno(session)
+    app.dependency_overrides[get_usuario_opcional] = lambda: CurrentUser(
+        id=uuid4(), email='admin@teste.com', e_admin=True
+    )
+
+    response = client.get(f'/turmas/{turma.id}')
+    app.dependency_overrides.clear()
+
+    assert len(response.json()['alunos']) == 1
+
+
+def test_read_turmas_anonimo_nao_ve_alunos(client, session):
+    _turma_com_aluno(session)
+    app.dependency_overrides.pop(get_current_user, None)
+
+    response = client.get('/turmas/')
+
+    assert response.status_code == HTTPStatus.OK
+    assert all(turma['alunos'] == [] for turma in response.json()['turmas'])
+    assert 'MATRICULA-PRIVADA' not in response.text
