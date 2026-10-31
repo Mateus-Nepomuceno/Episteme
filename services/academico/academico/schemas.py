@@ -193,3 +193,10 @@ class TurmaDisponivelResponse(BaseModel):
 class TurmasDisponiveisResponse(BaseModel):
     periodo_letivo: str
     turmas: list[TurmaDisponivelResponse]
+
+
+class SituacaoAcademicaAlunoPublic(BaseModel):
+    aluno_usuario_id: UUID
+    matricula: str
+    curso: CursoPublic
+    ativo: bool

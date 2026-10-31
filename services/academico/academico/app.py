@@ -5,7 +5,7 @@ from fastapi import FastAPI
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 
-from academico.routers import cursos, disciplinas, matriculas
+from academico.routers import cursos, disciplinas, matriculas, situacao
 from academico.routers.periodos_matricula import (
     router as periodos_matricula_router,
 )
@@ -50,6 +50,7 @@ async def encaminhar_token(request: Request):
 app.include_router(cursos.router)
 app.include_router(disciplinas.router)
 app.include_router(matriculas.router)
+app.include_router(situacao.router)
 app.include_router(periodos_matricula_router)
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Mensagem)
