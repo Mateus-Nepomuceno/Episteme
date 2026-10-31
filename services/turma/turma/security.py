@@ -1,0 +1,71 @@
+from http import HTTPStatus
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jwt import InvalidTokenError, decode
+from pydantic import BaseModel
+
+from turma.settings import Settings
+
+settings = Settings()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
+oauth2_scheme_opcional = OAuth2PasswordBearer(
+    tokenUrl='/auth/token', auto_error=False
+)
+
+
+class CurrentUser(BaseModel):
+    id: UUID
+    email: str
+    e_admin: bool
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
+    credentials_exception = HTTPException(
+        status_code=HTTPStatus.UNAUTHORIZED,
+        detail='Não foi possível validar as credenciais de autenticação',
+        headers={'WWW-Authenticate': 'Bearer'},
+    )
+
+    try:
+        payload = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except InvalidTokenError:
+        raise credentials_exception
+    else:
+        email = payload.get('sub')
+        user_id = payload.get('id')
+        e_admin = payload.get('e_admin')
+        if not email or not user_id or e_admin is None:
+            raise credentials_exception
+        return CurrentUser(id=user_id, email=email, e_admin=e_admin)
+
+
+def get_usuario_opcional(
+    token: str | None = Depends(oauth2_scheme_opcional),
+) -> CurrentUser | None:
+    if token is None:
+        return None
+
+    try:
+        return get_current_user(token)
+    except HTTPException:
+        return None
+
+
+def exigir_admin(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> CurrentUser:
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+    return current_user
+
+
+def exigir_dono_ou_admin(current_user: CurrentUser, usuario_id: UUID) -> None:
+    if current_user.id != usuario_id and not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
