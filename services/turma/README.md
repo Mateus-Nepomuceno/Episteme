@@ -110,7 +110,9 @@ repositório. Ele tem a revisão `0eb32f467811` no `alembic_version` e tabelas
 como `modulos`, `materiais` e `atividades`, que o código não usa. O código atual
 não consegue ler esse arquivo, porque `turmas` não tem a coluna `codigo`.
 
-O arquivo não é alterado pelas migrações deste repositório. Para rodar o serviço
+Com o `DATABASE_URL` atual, `poetry run alembic upgrade head` falha com
+`Can't locate revision identified by '0eb32f467811'`. O arquivo não é alterado
+pelas migrações deste repositório. Para rodar o serviço
 com o esquema atual, aponte `DATABASE_URL` para um arquivo novo e aplique as migrações:
 
 ```bash
