@@ -7,6 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from turma.academico_client import (
+    ServicoAcademicoIndisponivel,
+    consultar_curso,
+)
 from turma.database import get_session
 from turma.models import Aluno
 from turma.schemas import (
@@ -19,6 +23,28 @@ from turma.schemas import (
 from turma.security import CurrentUser, get_current_user
 
 router = APIRouter(prefix='/alunos', tags=['alunos'])
+
+
+def _exigir_curso_valido(curso_id: str) -> None:
+    try:
+        curso = consultar_curso(UUID(curso_id))
+    except ServicoAcademicoIndisponivel as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail='Não foi possível verificar o curso no serviço acadêmico',
+        ) from exc
+
+    if curso is None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Curso não encontrado no serviço acadêmico',
+        )
+
+    if not curso.get('ativo', False):
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Curso inativo não pode ser associado a alunos',
+        )
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=AlunoPublic)
@@ -34,6 +60,8 @@ def create_aluno(aluno: AlunoCreate, session: Annotated[Session, Depends(get_ses
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT, detail='Aluno já cadastrado'
         )
+
+    _exigir_curso_valido(aluno.curso_id)
 
     db_aluno = Aluno(
         usuario_id=aluno.usuario_id,
@@ -104,6 +132,8 @@ def update_aluno(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
+
+    _exigir_curso_valido(aluno.curso_id)
 
     try:
         db_aluno.usuario_id = aluno.usuario_id
