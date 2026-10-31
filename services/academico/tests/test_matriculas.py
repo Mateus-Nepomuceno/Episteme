@@ -1,8 +1,8 @@
-import httpx
-from uuid import uuid4
-from unittest.mock import Mock, patch
 from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
+import httpx
 import pytest
 
 from academico.app import app
@@ -142,7 +142,7 @@ def test_protocolo_inexistente_retorna_404(
 def test_aluno_nao_consulta_solicitacao_de_outro(
     client, autenticar, criar_solicitacao
 ):
-    aluno = autenticar()
+    autenticar()
 
     solicitacao_outro_aluno = criar_solicitacao(
         usuario_id=uuid4()
@@ -232,6 +232,7 @@ def test_solicitar_matricula_com_turma_simulada(
 
     requisicao.assert_called_once()
 
+
 def test_filtrar_solicitacoes_por_aluno(
     client, autenticar, criar_solicitacao
 ):
@@ -257,6 +258,7 @@ def test_filtrar_solicitacoes_por_aluno(
     assert len(solicitacoes) == 1
     assert solicitacoes[0]["aluno_id"] == str(aluno_id)
 
+
 def test_coordenacao_atualiza_observacao(
     client, autenticar, criar_solicitacao
 ):
@@ -272,6 +274,7 @@ def test_coordenacao_atualiza_observacao(
     assert resposta.status_code == 200
     assert resposta.json()["observacao"] == "Documentação conferida."
     assert resposta.json()["protocolo"] == str(solicitacao.protocolo)
+
 
 def test_aluno_nao_pode_atualizar_observacao(
     client, autenticar, criar_solicitacao
@@ -290,6 +293,7 @@ def test_aluno_nao_pode_atualizar_observacao(
     assert resposta.status_code == 403
     assert solicitacao.observacao is None
 
+
 def test_atualizar_observacao_protocolo_inexistente(
     client, autenticar
 ):
@@ -303,6 +307,7 @@ def test_atualizar_observacao_protocolo_inexistente(
     )
 
     assert resposta.status_code == 404
+
 
 def test_solicitar_matricula_timeout_turma(client, autenticar):
     autenticar()
@@ -323,6 +328,7 @@ def test_solicitar_matricula_timeout_turma(client, autenticar):
     assert resposta.json()["detail"] == (
         "O serviço de turma demorou para responder"
     )
+
 
 def test_solicitar_matricula_falha_conexao_turma(
     client, autenticar
@@ -345,6 +351,7 @@ def test_solicitar_matricula_falha_conexao_turma(
     assert resposta.json()["detail"] == (
         "Não foi possível acessar o serviço de turma"
     )
+
 
 def test_solicitar_matricula_aluno_nao_encontrado(
     client, autenticar
@@ -372,6 +379,7 @@ def test_solicitar_matricula_aluno_nao_encontrado(
         "Cadastro de aluno não encontrado"
     )
 
+
 def test_solicitar_matricula_erro_interno_turma(
     client, autenticar
 ):
@@ -397,6 +405,7 @@ def test_solicitar_matricula_erro_interno_turma(
     assert resposta.json()["detail"] == (
         "O serviço de turma retornou um erro"
     )
+
 
 def test_solicitar_matricula_ids_invalidos_turma(
     client, autenticar
@@ -427,6 +436,7 @@ def test_solicitar_matricula_ids_invalidos_turma(
     assert resposta.json()["detail"] == (
         "O serviço de turma retornou identificadores inválidos"
     )
+
 
 def test_solicitar_matricula_curso_nao_cadastrado(
     client, autenticar

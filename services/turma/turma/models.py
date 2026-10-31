@@ -61,9 +61,7 @@ class Turma:
     )
     nome: Mapped[str] = mapped_column()
     materia: Mapped[str]
-    # Código institucional da disciplina ofertada nesta turma.
     codigo: Mapped[str | None] = mapped_column(default=None)
-    # Identificador do curso no serviço academico.
     curso_id: Mapped[UUID | None] = mapped_column(default=None)
     periodo_letivo: Mapped[str | None] = mapped_column(default=None)
     capacidade: Mapped[int | None] = mapped_column(default=None)

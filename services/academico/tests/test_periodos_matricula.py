@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import pytest
@@ -6,10 +7,10 @@ import pytest
 from academico.app import app
 from academico.models import Curso, PeriodoMatricula
 from academico.security import CurrentUser, get_current_user
-from unittest.mock import Mock, patch
 from academico.services.periodos_matricula_service import (
     atualizar_status_periodos,
 )
+
 
 @pytest.fixture
 def autenticar_periodo():
@@ -216,9 +217,6 @@ def test_coordenacao_pode_encerrar_periodo_manualmente(
     assert resposta.json()["status"] == "encerrado"
 
 
-from datetime import datetime, timedelta, timezone
-
-
 def criar_curso_para_teste(session):
     curso = Curso(
         codigo=f"TESTE-{uuid4()}",
@@ -358,6 +356,7 @@ def test_solicitar_matricula_turma_nao_permitida_retorna_422(
     assert resposta.json()["detail"] == (
         "Uma ou mais turmas solicitadas não estão disponíveis neste período"
     )
+
 
 def test_scheduler_atualiza_status_dos_periodos(session):
     agora = datetime(2026, 10, 20, 12, 0, 0)

@@ -234,3 +234,38 @@ def test_read_disciplinas(client):
     response = client.get('/disciplinas/')
     assert response.status_code == HTTPStatus.OK
     assert 'disciplinas' in response.json()
+
+
+def test_create_disciplina_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.post(
+        '/disciplinas/',
+        json={
+            'codigo': 'DIS-X',
+            'nome': 'Disciplina X',
+            'carga_horaria': 60,
+            'tipo': 'obrigatoria',
+            'departamento': 'Computação',
+        },
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_create_disciplina_sem_autenticacao(client, session):
+    app.dependency_overrides.pop(get_current_user, None)
+    response = client.post(
+        '/disciplinas/',
+        json={
+            'codigo': 'DIS-Y',
+            'nome': 'Disciplina Y',
+            'carga_horaria': 60,
+            'tipo': 'obrigatoria',
+            'departamento': 'Computação',
+        },
+    )
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

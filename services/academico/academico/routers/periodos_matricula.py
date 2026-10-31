@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated, Literal
 from uuid import UUID
@@ -18,7 +17,6 @@ from academico.schemas import (
 from academico.security import CurrentUser, get_current_user
 from academico.services.periodos_matricula_service import atualizar_status
 
-
 router = APIRouter(
     prefix="/periodos-matricula",
     tags=["periodos-matricula"],
@@ -26,37 +24,11 @@ router = APIRouter(
 
 
 def exigir_coordenacao(current_user: CurrentUser) -> None:
-    # Confirme se e_admin representa a coordenação no projeto.
     if not current_user.e_admin:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
             detail="Apenas a coordenação pode configurar períodos",
         )
-
-
-def atualizar_status(
-    periodo: PeriodoMatricula,
-    session: Session,
-) -> PeriodoMatricula:
-    # Um período encerrado manualmente não será reaberto.
-    if periodo.status == "encerrado":
-        return periodo
-
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    if agora >= periodo.data_final:
-        novo_status = "encerrado"
-    elif agora >= periodo.data_inicial:
-        novo_status = "aberto"
-    else:
-        novo_status = "agendado"
-
-    if periodo.status != novo_status:
-        periodo.status = novo_status
-        session.commit()
-        session.refresh(periodo)
-
-    return periodo
 
 
 @router.post(

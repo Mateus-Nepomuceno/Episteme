@@ -13,7 +13,6 @@ INTERVALO_SEGUNDOS = 5
 
 async def executar_scheduler_periodos() -> None:
     while True:
-        # A primeira verificação acontece após o intervalo.
         await asyncio.sleep(INTERVALO_SEGUNDOS)
 
         try:
@@ -28,7 +27,6 @@ async def executar_scheduler_periodos() -> None:
                 )
 
         except Exception:
-            # Um erro não deve encerrar definitivamente o scheduler.
             logger.exception(
                 "Erro ao atualizar os status dos períodos de matrícula"
             )

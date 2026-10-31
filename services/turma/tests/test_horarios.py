@@ -707,8 +707,8 @@ def test_update_horario_conflict_local(client, session):
         turma_id=turma1.id,
         professor_id=professor1.id,
         dia_semana=DiaSemana.quinta,
-        horario_inicio=time(7),
-        horario_fim=time(9),
+        horario_inicio=time(11),
+        horario_fim=time(13),
         local='Sala 1',
     )
     session.add(horario_ok)
@@ -867,3 +867,72 @@ def test_delete_horario(client, session):
     response = client.delete(f'/horarios/{horario.id}')
     assert response.status_code == HTTPStatus.OK
     app.dependency_overrides.clear()
+
+
+def test_update_horario_mantendo_o_mesmo_horario(client, session):
+    professor = Professor(usuario_id=uuid4(), matricula_id='777')
+    session.add(professor)
+    session.commit()
+    session.refresh(professor)
+
+    turma = Turma(
+        nome='Turma 1',
+        materia='Mat 1',
+        professor_id=professor.id,
+        professor=professor,
+        avisos=[],
+        documentos=[],
+    )
+    session.add(turma)
+    session.commit()
+    session.refresh(turma)
+
+    horario = Horario(
+        turma_id=turma.id,
+        professor_id=professor.id,
+        dia_semana=DiaSemana.terca,
+        horario_inicio=time(8),
+        horario_fim=time(10),
+        local='Sala 9',
+    )
+    session.add(horario)
+    session.commit()
+    session.refresh(horario)
+
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='teste@teste.com', e_admin=True
+    )
+    response = client.put(
+        f'/horarios/{horario.id}',
+        json={
+            'turma_id': str(turma.id),
+            'professor_id': str(professor.id),
+            'dia_semana': DiaSemana.terca.value,
+            'horario_inicio': '08:00:00',
+            'horario_fim': '10:00:00',
+            'local': 'Sala 9',
+        },
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.OK
+
+
+def test_create_horario_com_hora_invalida_retorna_422(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='teste@teste.com', e_admin=True
+    )
+    response = client.post(
+        '/horarios/',
+        json={
+            'turma_id': str(uuid4()),
+            'professor_id': str(uuid4()),
+            'dia_semana': DiaSemana.segunda.value,
+            'horario_inicio': 'abc',
+            'horario_fim': '10:00',
+            'local': 'Sala',
+        },
+    )
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

@@ -1,4 +1,3 @@
-from datetime import time
 from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
@@ -20,15 +19,17 @@ from turma.security import CurrentUser, get_current_user
 router = APIRouter(prefix='/horarios', tags=['professores'])
 
 
-# Checa se horário possui algum tipo de conflito. Usado na rota de create e update
-def check_horario_tem_conflito(horario: HorarioCreate, session: Annotated[Session, Depends(get_session)]):
-    horario_inicio = time.fromisoformat(horario.horario_inicio)
-    horario_fim = time.fromisoformat(horario.horario_fim)
-
-    if horario_inicio > horario_fim:
+def check_horario_tem_conflito(
+    horario: HorarioCreate,
+    session: Session,
+    horario_id: UUID | None = None,
+):
+    if horario.horario_inicio > horario.horario_fim:
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT, detail='Horário de início e fim incorretos'
         )
+
+    outro_horario = [Horario.id != horario_id] if horario_id else []
 
     db_horario_conflito_turma = session.scalar(
         select(Horario)
@@ -36,8 +37,9 @@ def check_horario_tem_conflito(horario: HorarioCreate, session: Annotated[Sessio
         .where(
             Horario.dia_semana == horario.dia_semana,
             Horario.turma_id == horario.turma_id,
-            Horario.horario_inicio < horario_fim,
-            Horario.horario_fim > horario_inicio,
+            Horario.horario_inicio < horario.horario_fim,
+            Horario.horario_fim > horario.horario_inicio,
+            *outro_horario,
         )
     )
     if db_horario_conflito_turma:
@@ -51,8 +53,9 @@ def check_horario_tem_conflito(horario: HorarioCreate, session: Annotated[Sessio
         .where(
             Horario.dia_semana == horario.dia_semana,
             Horario.professor_id == horario.professor_id,
-            Horario.horario_inicio < horario_fim,
-            Horario.horario_fim > horario_inicio,
+            Horario.horario_inicio < horario.horario_fim,
+            Horario.horario_fim > horario.horario_inicio,
+            *outro_horario,
         )
     )
     if db_horario_conflito_professor:
@@ -66,8 +69,9 @@ def check_horario_tem_conflito(horario: HorarioCreate, session: Annotated[Sessio
         .where(
             Horario.dia_semana == horario.dia_semana,
             Horario.local == horario.local,
-            Horario.horario_inicio < horario_fim,
-            Horario.horario_fim > horario_inicio,
+            Horario.horario_inicio < horario.horario_fim,
+            Horario.horario_fim > horario.horario_inicio,
+            *outro_horario,
         )
     )
     if db_horario_conflito_local:
@@ -82,9 +86,6 @@ def create_horario(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUser, Depends(get_current_user)]
 ):
-    horario_inicio = time.fromisoformat(horario.horario_inicio)
-    horario_fim = time.fromisoformat(horario.horario_fim)
-
     if not current_user.e_admin:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
@@ -97,8 +98,8 @@ def create_horario(
         turma_id=horario.turma_id,
         professor_id=horario.professor_id,
         dia_semana=horario.dia_semana,
-        horario_inicio=horario_inicio,
-        horario_fim=horario_fim,
+        horario_inicio=horario.horario_inicio,
+        horario_fim=horario.horario_fim,
         local=horario.local
     )
 
@@ -190,14 +191,11 @@ def update_horario(
             detail='Permissão negada'
         )
 
-    check_horario_tem_conflito(horario, session)
-
-    horario_inicio = time.fromisoformat(horario.horario_inicio)
-    horario_fim = time.fromisoformat(horario.horario_fim)
+    check_horario_tem_conflito(horario, session, horario_id)
 
     db_horario.dia_semana = horario.dia_semana
-    db_horario.horario_inicio = horario_inicio
-    db_horario.horario_fim = horario_fim
+    db_horario.horario_inicio = horario.horario_inicio
+    db_horario.horario_fim = horario.horario_fim
     db_horario.local = horario.local
     db_horario.turma_id = horario.turma_id
     db_horario.professor_id = horario.professor_id

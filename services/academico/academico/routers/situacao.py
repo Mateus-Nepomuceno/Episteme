@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Annotated
+from urllib.parse import quote
 from uuid import UUID
 
 import httpx
@@ -35,7 +36,7 @@ def consultar_situacao_academica_aluno(
 ):
     url = (
         f'{settings.TURMA_API_URL.rstrip("/")}'
-        f'/alunos/matricula_id/{matricula_aluno}'
+        f'/alunos/matricula_id/{quote(matricula_aluno, safe="")}'
     )
 
     try:
@@ -63,7 +64,14 @@ def consultar_situacao_academica_aluno(
             detail='O serviço de turma retornou um erro',
         )
 
-    aluno = response.json()
+    try:
+        aluno = response.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail='O serviço de turma retornou uma resposta inválida',
+        ) from exc
+
     try:
         usuario_id = UUID(str(aluno['usuario_id']))
         curso_id = UUID(str(aluno['curso_id']))

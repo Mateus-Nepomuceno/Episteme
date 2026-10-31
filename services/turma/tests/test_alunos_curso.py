@@ -188,3 +188,24 @@ def test_update_aluno_com_curso_valido(client, session, curso_academico):
     app.dependency_overrides.clear()
     assert response.status_code == HTTPStatus.OK
     assert response.json()['curso_id'] == novo_curso
+
+
+def test_create_aluno_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.post('/alunos/', json=_payload_aluno())
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert session.query(Aluno).count() == 0
+
+
+def test_listar_alunos_por_usuario_comum_e_negado(client, session):
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='comum@teste.com', e_admin=False
+    )
+    response = client.get('/alunos/')
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.FORBIDDEN

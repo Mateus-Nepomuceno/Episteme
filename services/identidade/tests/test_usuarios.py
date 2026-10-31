@@ -40,14 +40,45 @@ def test_create_usuario_conflict(client, user):
     assert response.status_code == HTTPStatus.CONFLICT
 
 
-def test_read_usuario(client, user):
-    response = client.get(f'/usuarios/{user.id}')
+def test_read_usuario(client, user, user_token):
+    response = client.get(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+    )
     assert response.status_code == HTTPStatus.OK
     assert response.json()['email'] == user.email
 
 
-def test_read_usuario_not_found(client):
-    response = client.get(f'/usuarios/{uuid4()}')
+def test_read_usuario_sem_autenticacao(client, user):
+    response = client.get(f'/usuarios/{user.id}')
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_read_usuario_de_outro_usuario_e_negado(
+    client, admin, user_token
+):
+    response = client.get(
+        f'/usuarios/{admin.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_read_usuario_admin_consulta_qualquer_usuario(
+    client, user, admin_token
+):
+    response = client.get(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {admin_token}'},
+    )
+    assert response.status_code == HTTPStatus.OK
+
+
+def test_read_usuario_not_found(client, admin_token):
+    response = client.get(
+        f'/usuarios/{uuid4()}',
+        headers={'Authorization': f'Bearer {admin_token}'},
+    )
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -313,3 +344,46 @@ def test_update_usuario_cpf_invalido_e_recusado(client, user, user_token):
         ),
     )
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_nao_cria_administrador(client, session):
+    response = client.post(
+        '/usuarios/',
+        json=_payload_usuario(email='novo@exemplo.com', e_admin=True),
+    )
+
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.json()['e_admin'] is False
+
+
+def test_update_usuario_comum_nao_se_promove(client, user, user_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+        json=_payload_usuario(
+            email=user.email,
+            cpf=user.cpf,
+            telefone=user.telefone,
+            senha='senha_limpa',
+            e_admin=True,
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_update_usuario_admin_pode_promover(client, user, admin_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {admin_token}'},
+        json=_payload_usuario(
+            email=user.email,
+            cpf=user.cpf,
+            telefone=user.telefone,
+            senha='senha_limpa',
+            e_admin=True,
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['e_admin'] is True

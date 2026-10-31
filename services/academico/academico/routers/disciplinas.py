@@ -27,7 +27,13 @@ router = APIRouter(prefix='/disciplinas', tags=['disciplinas'])
 def create_disciplina(
     disciplina: DisciplinaCreate,
     session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     db_disciplina = session.scalar(
         select(Disciplina).where(Disciplina.codigo == disciplina.codigo)
     )

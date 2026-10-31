@@ -23,8 +23,15 @@ router = APIRouter(prefix='/cursos', tags=['cursos'])
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=CursoPublic)
 def create_curso(
-    curso: CursoCreate, session: Annotated[Session, Depends(get_session)]
+    curso: CursoCreate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     db_curso = session.scalar(
         select(Curso).where(Curso.codigo == curso.codigo)
     )

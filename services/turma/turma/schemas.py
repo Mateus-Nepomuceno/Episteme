@@ -10,17 +10,14 @@ class Mensagem(BaseModel):
     mensagem: str
 
 
-# Filter
 class FiltroPaginacao(BaseModel):
     offset: int = Field(0, ge=0)
     limit: int = Field(100, ge=1)
 
 
-# Aluno schemas
 class AlunoCreate(BaseModel):
     usuario_id: UUID
     matricula_id: str
-    # UUID do curso, o mesmo identificador usado pelo serviço acadêmico.
     curso_id: str
     ativo: bool = True
 
@@ -50,7 +47,6 @@ class AlunoList(BaseModel):
     alunos: list[AlunoPublic]
 
 
-# Professor schemas
 class ProfessorCreate(BaseModel):
     usuario_id: UUID
     matricula_id: str
@@ -69,7 +65,6 @@ class ProfessorList(BaseModel):
     professores: list[ProfessorPublic]
 
 
-# Turma schemas
 PERIODO_LETIVO_PATTERN = r'^\d{4}\.[12]$'
 
 
@@ -122,8 +117,6 @@ class TurmaList(BaseModel):
     turmas: list[TurmaPublic]
 
 
-# Oferta de turma para matrícula. Não inclui os alunos matriculados,
-# apenas a quantidade de vagas restantes.
 class TurmaOfertaPublic(BaseModel):
     id: UUID
     nome: str
@@ -141,13 +134,12 @@ class TurmaOfertaList(BaseModel):
     turmas: list[TurmaOfertaPublic]
 
 
-# Horario schemas
 class HorarioCreate(BaseModel):
     turma_id: UUID
     professor_id: UUID
     dia_semana: DiaSemana
-    horario_inicio: str  # HH:MM
-    horario_fim: str  # HH:MM
+    horario_inicio: time
+    horario_fim: time
     local: str
 
 

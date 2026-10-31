@@ -48,7 +48,16 @@ def _exigir_curso_valido(curso_id: str) -> None:
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=AlunoPublic)
-def create_aluno(aluno: AlunoCreate, session: Annotated[Session, Depends(get_session)]):
+def create_aluno(
+    aluno: AlunoCreate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     db_aluno = session.scalar(
         select(Aluno).where(
             (Aluno.matricula_id == aluno.matricula_id)
@@ -78,7 +87,16 @@ def create_aluno(aluno: AlunoCreate, session: Annotated[Session, Depends(get_ses
 
 
 @router.get('/', response_model=AlunoList)
-def read_alunos(filter: Annotated[FiltroPaginacao, Depends()], session: Annotated[Session, Depends(get_session)]):
+def read_alunos(
+    filter: Annotated[FiltroPaginacao, Depends()],
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+
     alunos = session.scalars(select(Aluno).offset(filter.offset).limit(filter.limit)).all()
     return {'alunos': alunos}
 

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from uuid import uuid4
 
@@ -30,6 +31,21 @@ def test_get_current_user_invalid_token():
 def test_get_current_user_missing_fields():
     settings = Settings()
     payload = {'sub': 'teste@teste.com'}
+    token = encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    with pytest.raises(HTTPException) as excinfo:
+        get_current_user(token)
+    assert excinfo.value.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_get_current_user_token_expirado():
+    settings = Settings()
+    payload = {
+        'sub': 'teste@teste.com',
+        'id': str(uuid4()),
+        'e_admin': True,
+        'exp': datetime.now(tz=UTC) - timedelta(minutes=1),
+    }
     token = encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     with pytest.raises(HTTPException) as excinfo:

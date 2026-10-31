@@ -51,7 +51,6 @@ def normalizar_telefone(valor: str) -> str:
 
     digitos = re.sub(r'\D', '', valor)
 
-    # Aceita o código do Brasil (55) antes do DDD, com ou sem o sinal "+".
     if len(digitos) in TELEFONE_TAMANHOS_COM_PAIS and digitos.startswith(
         '55'
     ):
@@ -66,7 +65,6 @@ def normalizar_telefone(valor: str) -> str:
     return f'+55{digitos}'
 
 
-# Usuario schemas
 class UsuarioSchema(BaseModel):
     nome: str
     email: EmailStr
@@ -96,13 +94,11 @@ class UsuarioPublic(BaseModel):
     e_admin: bool
 
 
-# JWT
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 
-# Filter
 class FiltroPaginacao(BaseModel):
     offset: int = Field(0, ge=0)
     limit: int = Field(100, ge=1)

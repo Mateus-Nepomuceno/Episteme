@@ -12,3 +12,4 @@ class Settings(BaseSettings):
     ALGORITHM: str = Field(init=False)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(init=False)
     TURMA_API_URL: str = Field(init=False)
+    IDENTIDADE_API_URL: str = 'http://127.0.0.1:8000'

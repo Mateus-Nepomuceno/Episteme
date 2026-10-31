@@ -12,7 +12,6 @@ def calcular_status(
     periodo: PeriodoMatricula,
     agora: datetime | None = None,
 ) -> str:
-    # Um encerramento manual é definitivo.
     if periodo.status == "encerrado":
         return "encerrado"
 

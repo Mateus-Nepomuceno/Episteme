@@ -6,12 +6,12 @@ from typing import Annotated
 from uuid import UUID
 
 import httpx
-from pydantic import ValidationError
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from academico.database import get_session
-from sqlalchemy import select
 from academico.models import (
     Curso,
     PeriodoMatricula,
@@ -19,19 +19,18 @@ from academico.models import (
 )
 from academico.schemas import (
     DiaSemanaFiltro,
-    TurmaDisponivelResponse,
+    ObservacaoMatriculaUpdate,
     SolicitacaoMatriculaCreate,
+    SolicitacaoMatriculaCriadaResponse,
     SolicitacaoMatriculaResponse,
     SolicitacoesMatriculaList,
-    ObservacaoMatriculaUpdate,
-    SolicitacaoMatriculaCriadaResponse,
+    TurmaDisponivelResponse,
     TurmasDisponiveisResponse,
 )
 from academico.security import CurrentUser, get_current_user
-from academico.settings import Settings
-from academico.routers.periodos_matricula import atualizar_status
-
 from academico.services.periodos_matricula_service import atualizar_status
+from academico.settings import Settings
+
 settings = Settings()
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
@@ -266,6 +265,7 @@ def consultar_solicitacao(
 
     return solicitacao
 
+
 @router.patch('/solicitacoes/{protocolo}/observacao')
 def atualizar_observacao(
     protocolo: UUID,
@@ -412,7 +412,6 @@ def consultar_turmas_disponiveis(
             detail="O curso do aluno não está autorizado neste período",
         )
 
-    # A coordenação define quais turmas podem ser cursadas no período.
     turmas_permitidas = {
         str(UUID(str(turma_id)))
         for periodo in periodos_autorizados

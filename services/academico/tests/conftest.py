@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 from academico.app import app
 from academico.database import get_session
 from academico.models import table_registry
-from academico.security import CurrentUser
+from academico.security import CurrentUser, get_current_user
 
 
 @pytest.fixture
@@ -50,3 +50,12 @@ def current_user_override():
     ] = override
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def usuario_administrador():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        id=uuid4(), email='admin@teste.com', e_admin=True
+    )
+    yield
+    app.dependency_overrides.pop(get_current_user, None)

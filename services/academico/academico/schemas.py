@@ -1,6 +1,6 @@
-from uuid import UUID
 from datetime import datetime, time, timezone
 from typing import Literal
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -16,13 +16,11 @@ class Mensagem(BaseModel):
     mensagem: str
 
 
-# Filter
 class FiltroPaginacao(BaseModel):
     offset: int = Field(0, ge=0)
     limit: int = Field(100, ge=1)
 
 
-# Disciplina schemas
 class DisciplinaCreate(BaseModel):
     codigo: str
     nome: str
@@ -55,7 +53,6 @@ class DisciplinaList(BaseModel):
     disciplinas: list[DisciplinaPublic]
 
 
-# Curso schemas
 class CursoCreate(BaseModel):
     codigo: str
     nome: str
@@ -87,11 +84,13 @@ class CursoPublic(BaseModel):
 class CursoList(BaseModel):
     cursos: list[CursoPublic]
 
+
 class CadastroAcademicoResponse(BaseModel):
     mensagem: str
     usuario_id: UUID
     aluno_id: UUID
     curso_id: str
+
 
 class SolicitacaoMatriculaCreate(BaseModel):
     periodo_letivo: str = Field(pattern=r'^\d{4}\.[12]$')
@@ -116,8 +115,10 @@ class SolicitacaoMatriculaResponse(BaseModel):
 class SolicitacaoMatriculaCriadaResponse(SolicitacaoMatriculaResponse):
     mensagem: str
 
+
 class SolicitacoesMatriculaList(BaseModel):
     solicitacoes: list[SolicitacaoMatriculaResponse]
+
 
 class ObservacaoMatriculaUpdate(BaseModel):
     observacao: str | None = Field(default=None, max_length=1000)
@@ -142,8 +143,6 @@ class PeriodoMatriculaCreate(BaseModel):
                 "como -03:00 ou +00:00"
             )
 
-        # O banco SQLite armazena o horário normalizado em UTC,
-        # sem informação de fuso.
         return valor.astimezone(timezone.utc).replace(tzinfo=None)
 
     @model_validator(mode="after")
