@@ -102,3 +102,19 @@ dela para que o código funcione.
 
 Gere uma nova revisão com `poetry run alembic revision --autogenerate -m "descrição"`
 e aplique com `poetry run alembic upgrade head`.
+
+### Banco local com esquema anterior
+
+O arquivo `database.db` deste serviço foi criado fora das migrações deste
+repositório. Ele tem a revisão `0eb32f467811` no `alembic_version` e tabelas
+como `modulos`, `materiais` e `atividades`, que o código não usa. O código atual
+não consegue ler esse arquivo, porque `turmas` não tem a coluna `codigo`.
+
+O arquivo não é alterado pelas migrações deste repositório. Para rodar o serviço
+com o esquema atual, aponte `DATABASE_URL` para um arquivo novo e aplique as migrações:
+
+```bash
+DATABASE_URL=sqlite:///database_novo.db poetry run alembic upgrade head
+```
+
+Se os dados do arquivo antigo forem necessários, exporte-os manualmente antes.
