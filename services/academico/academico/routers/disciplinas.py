@@ -104,7 +104,6 @@ def update_disciplina(
             detail='Disciplina não encontrada',
         )
 
-
     db_disciplina.codigo = disciplina.codigo
     db_disciplina.nome = disciplina.nome
     db_disciplina.carga_horaria = disciplina.carga_horaria
@@ -141,7 +140,6 @@ def delete_disciplina(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Disciplina não encontrada',
         )
-
 
     session.delete(db_disciplina)
     session.commit()

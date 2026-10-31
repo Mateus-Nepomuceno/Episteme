@@ -96,7 +96,6 @@ def update_curso(
             status_code=HTTPStatus.NOT_FOUND, detail='Curso não encontrado'
         )
 
-
     db_curso.codigo = curso.codigo
     db_curso.nome = curso.nome
     db_curso.tipo_formacao = curso.tipo_formacao
@@ -130,7 +129,6 @@ def delete_curso(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Curso não encontrado'
         )
-
 
     session.delete(db_curso)
     session.commit()

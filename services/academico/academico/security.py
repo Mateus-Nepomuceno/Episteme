@@ -1,7 +1,6 @@
 from http import HTTPStatus
-from uuid import UUID
-
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer

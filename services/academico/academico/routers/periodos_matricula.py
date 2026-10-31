@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from academico.database import get_session
 from academico.models import Curso, PeriodoMatricula
+from academico.periodos import atualizar_status
 from academico.schemas import (
     PeriodoMatriculaCreate,
     PeriodoMatriculaCriadoResponse,
@@ -15,7 +16,6 @@ from academico.schemas import (
     PeriodosMatriculaList,
 )
 from academico.security import CurrentUser, exigir_admin, get_current_user
-from academico.periodos import atualizar_status
 
 router = APIRouter(
     prefix="/periodos-matricula",
