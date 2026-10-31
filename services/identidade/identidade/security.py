@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from http import HTTPStatus
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, HTTPException
@@ -68,3 +69,13 @@ def get_current_user(
         raise credentials_exception
 
     return usuario
+
+
+def exigir_admin(
+    current_user: Annotated[Usuario, Depends(get_current_user)],
+) -> Usuario:
+    if not current_user.e_admin:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+    return current_user
