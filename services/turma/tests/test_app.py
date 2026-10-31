@@ -1,6 +1,8 @@
 from http import HTTPStatus
 from uuid import uuid4
 
+CURSO_A = '11111111-1111-1111-1111-111111111111'
+
 
 def test_root(client):
     response = client.get('/')
@@ -15,7 +17,7 @@ def test_create_aluno(client, current_user_override):
         json={
             'usuario_id': uid,
             'matricula_id': '123456',
-            'curso_id': '1',
+            'curso_id': CURSO_A,
             'ativo': True
         },
     )
@@ -23,7 +25,7 @@ def test_create_aluno(client, current_user_override):
     data = response.json()
     assert data['usuario_id'] == uid
     assert data['matricula_id'] == '123456'
-    assert data['curso_id'] == '1'
+    assert data['curso_id'] == CURSO_A
 
 
 def test_read_alunos(client):
