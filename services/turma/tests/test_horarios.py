@@ -438,7 +438,7 @@ def test_read_horarios_professor(client, session):
 
 
 def test_update_horario_not_found(client):
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=False)
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=uuid4(), email='teste@teste.com', e_admin=True)
     response = client.put(
         f'/horarios/{uuid4()}',
         json={

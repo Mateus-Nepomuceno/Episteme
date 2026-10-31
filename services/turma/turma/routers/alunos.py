@@ -20,7 +20,12 @@ from turma.schemas import (
     FiltroPaginacao,
     Mensagem,
 )
-from turma.security import CurrentUser, get_current_user
+from turma.security import (
+    CurrentUser,
+    exigir_admin,
+    exigir_dono_ou_admin,
+    get_current_user,
+)
 
 router = APIRouter(prefix='/alunos', tags=['alunos'])
 
@@ -51,12 +56,8 @@ def _exigir_curso_valido(curso_id: str) -> None:
 def create_aluno(
     aluno: AlunoCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     db_aluno = session.scalar(
         select(Aluno).where(
@@ -90,29 +91,37 @@ def create_aluno(
 def read_alunos(
     filter: Annotated[FiltroPaginacao, Depends()],
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-    if not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
-        )
 
     alunos = session.scalars(select(Aluno).offset(filter.offset).limit(filter.limit)).all()
     return {'alunos': alunos}
 
 
 @router.get('/{aluno_id}', response_model=AlunoPublic)
-def read_aluno(aluno_id: UUID, session: Annotated[Session, Depends(get_session)]):
+def read_aluno(
+    aluno_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
     aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
 
     if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
 
+    exigir_dono_ou_admin(current_user, aluno.usuario_id)
+
     return aluno
 
 
 @router.get('/usuario_id/{aluno_usuario_id}', response_model=AlunoPublic)
-def read_aluno_usuario_id(aluno_usuario_id: UUID, session: Annotated[Session, Depends(get_session)]):
+def read_aluno_usuario_id(
+    aluno_usuario_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    exigir_dono_ou_admin(current_user, aluno_usuario_id)
+
     aluno = session.scalar(select(Aluno).where(Aluno.usuario_id == aluno_usuario_id))
 
     if not aluno:
@@ -122,11 +131,17 @@ def read_aluno_usuario_id(aluno_usuario_id: UUID, session: Annotated[Session, De
 
 
 @router.get('/matricula_id/{aluno_matricula_id}', response_model=AlunoPublic)
-def read_aluno_matricula_id(aluno_matricula_id: str, session: Annotated[Session, Depends(get_session)]):
+def read_aluno_matricula_id(
+    aluno_matricula_id: str,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
     aluno = session.scalar(select(Aluno).where(Aluno.matricula_id == aluno_matricula_id))
 
     if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
+
+    exigir_dono_ou_admin(current_user, aluno.usuario_id)
 
     return aluno
 
@@ -136,7 +151,7 @@ def update_aluno(
     aluno_id: UUID,
     aluno: AlunoCreate,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
 
@@ -144,11 +159,6 @@ def update_aluno(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Aluno não encontrado'
-        )
-
-    if current_user.id != db_aluno.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     _exigir_curso_valido(aluno.curso_id)
@@ -173,18 +183,13 @@ def update_aluno(
 def delete_aluno(
     aluno_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-    current_user: Annotated[CurrentUser, Depends(get_current_user)]
+    current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
     db_aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
 
     if not db_aluno:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Aluno não encontrado'
-        )
-
-    if current_user.id != db_aluno.usuario_id and not current_user.e_admin:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
 
     session.delete(db_aluno)
