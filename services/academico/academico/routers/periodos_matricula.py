@@ -26,7 +26,6 @@ router = APIRouter(
 
 
 def exigir_coordenacao(current_user: CurrentUser) -> None:
-    # Confirme se e_admin representa a coordenação no projeto.
     if not current_user.e_admin:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
@@ -38,7 +37,6 @@ def atualizar_status(
     periodo: PeriodoMatricula,
     session: Session,
 ) -> PeriodoMatricula:
-    # Um período encerrado manualmente não será reaberto.
     if periodo.status == "encerrado":
         return periodo
 

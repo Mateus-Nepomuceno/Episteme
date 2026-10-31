@@ -410,7 +410,6 @@ def consultar_turmas_disponiveis(
             detail="O curso do aluno não está autorizado neste período",
         )
 
-    # A coordenação define quais turmas podem ser cursadas no período.
     turmas_permitidas = {
         str(UUID(str(turma_id)))
         for periodo in periodos_autorizados
