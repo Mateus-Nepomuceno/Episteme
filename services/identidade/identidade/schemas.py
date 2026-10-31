@@ -2,6 +2,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
+SENHA_MINIMA = 8
+
 
 class Mensagem(BaseModel):
     mensagem: str
@@ -17,7 +19,7 @@ class UsuarioSchema(BaseModel):
 
 
 class UsuarioCreate(UsuarioSchema):
-    senha: str
+    senha: str = Field(min_length=SENHA_MINIMA)
 
 
 class UsuarioPublic(BaseModel):

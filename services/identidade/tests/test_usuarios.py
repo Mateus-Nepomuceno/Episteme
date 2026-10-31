@@ -1,6 +1,11 @@
 from http import HTTPStatus
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from identidade.models import Usuario
+from identidade.security import verify_password
+
 
 def test_create_usuario(client):
     response = client.post(
@@ -164,3 +169,67 @@ def test_update_usuario_conflict(client, user, user_token):
         },
     )
     assert response.status_code == HTTPStatus.CONFLICT
+
+
+def _payload_usuario(**campos):
+    payload = {
+        'nome': 'carlos',
+        'email': 'carlos@exemplo.com',
+        'cpf': '111.444.777-35',
+        'telefone': '(11) 97777-7777',
+        'senha': 'senha_valida',
+        'e_admin': False,
+    }
+    payload.update(campos)
+    return payload
+
+
+def test_create_usuario_sem_senha_e_recusado(client, session):
+    response = client.post('/usuarios/', json=_payload_usuario(senha=''))
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_sem_campo_senha_e_recusado(client, session):
+    payload = _payload_usuario()
+    del payload['senha']
+    response = client.post('/usuarios/', json=payload)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_senha_curta_e_recusada(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='a' * 7)
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_usuario_senha_minima_e_aceita(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='a' * 8)
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+
+def test_create_usuario_armazena_senha_com_hash(client, session):
+    response = client.post(
+        '/usuarios/', json=_payload_usuario(senha='senha_secreta')
+    )
+    assert response.status_code == HTTPStatus.CREATED
+
+    usuario = session.scalar(
+        select(Usuario).where(Usuario.email == 'carlos@exemplo.com')
+    )
+    assert usuario is not None
+    assert usuario.senha != 'senha_secreta'
+    assert verify_password('senha_secreta', usuario.senha)
+
+
+def test_update_usuario_sem_senha_e_recusado(client, user, user_token):
+    response = client.put(
+        f'/usuarios/{user.id}',
+        headers={'Authorization': f'Bearer {user_token}'},
+        json=_payload_usuario(
+            email=user.email, cpf=user.cpf, telefone=user.telefone, senha=''
+        ),
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
