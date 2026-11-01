@@ -23,6 +23,7 @@ Crie `services/academico/.env` com estas variáveis:
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token em minutos. |
 | `TURMA_API_URL` | URL base do serviço `turma`, por exemplo `http://127.0.0.1:8001`. |
 | `IDENTIDADE_API_URL` | URL base do serviço `identidade`. Padrão `http://127.0.0.1:8000`. |
+| `CORS_ORIGINS` | Origens do navegador permitidas, separadas por vírgula. Padrão `http://localhost:5173`. |
 
 Não versione o `.env`. Ele já está no `.gitignore`.
 

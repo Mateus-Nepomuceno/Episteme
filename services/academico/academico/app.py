@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from academico.routers import cursos, disciplinas, matriculas, situacao
 from academico.routers.periodos_matricula import (
@@ -14,6 +15,13 @@ settings = Settings()
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.origens_cors,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 
 @app.post('/auth/token', include_in_schema=False)
