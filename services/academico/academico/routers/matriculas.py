@@ -13,18 +13,23 @@ from sqlalchemy.orm import Session
 from academico.database import get_session
 from academico.models import (
     Curso,
+    Disciplina,
     PeriodoMatricula,
     SolicitacaoMatricula,
 )
 from academico.periodos import atualizar_status
 from academico.schemas import (
     DiaSemanaFiltro,
+    DisciplinaMatriculadaResponse,
+    DisciplinaPublic,
+    MinhasDisciplinasResponse,
     ObservacaoMatriculaUpdate,
     SolicitacaoMatriculaCreate,
     SolicitacaoMatriculaCriadaResponse,
     SolicitacaoMatriculaResponse,
     SolicitacoesMatriculaList,
     TurmaDisponivelResponse,
+    TurmaMatriculadaResponse,
     TurmasDisponiveisResponse,
 )
 from academico.security import (
@@ -32,7 +37,11 @@ from academico.security import (
     exigir_admin,
     get_current_user,
 )
-from academico.turma_client import buscar_aluno_por_usuario, listar_ofertas
+from academico.turma_client import (
+    buscar_aluno_por_usuario,
+    listar_ofertas,
+    listar_turmas_do_aluno,
+)
 
 router = APIRouter(prefix='/matricula', tags=['matricula'])
 
@@ -341,6 +350,61 @@ def _converter_ofertas(ofertas_remotas, turmas_permitidas, filtro, periodo_letiv
         turmas_disponiveis.append(oferta)
 
     return turmas_disponiveis
+
+
+@router.get(
+    "/minhas-disciplinas",
+    response_model=MinhasDisciplinasResponse,
+)
+def consultar_minhas_disciplinas(
+    current_user: Annotated[
+        CurrentUser,
+        Depends(get_current_user),
+    ],
+    session: Annotated[Session, Depends(get_session)],
+):
+    aluno = buscar_aluno_por_usuario(current_user.id, current_user.token)
+
+    try:
+        aluno_id = str(UUID(str(aluno["id"])))
+    except (KeyError, ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="O serviço de turma retornou identificadores inválidos",
+        ) from exc
+
+    turmas = listar_turmas_do_aluno(aluno_id, current_user.token)
+
+    codigos = {turma["codigo"] for turma in turmas if turma.get("codigo")}
+
+    if not codigos:
+        return {"disciplinas": []}
+
+    disciplinas = session.scalars(
+        select(Disciplina)
+        .where(Disciplina.codigo.in_(codigos))
+        .order_by(Disciplina.nome)
+    ).all()
+
+    try:
+        return {
+            "disciplinas": [
+                DisciplinaMatriculadaResponse(
+                    **DisciplinaPublic.model_validate(disciplina).model_dump(),
+                    turmas=[
+                        TurmaMatriculadaResponse.model_validate(turma)
+                        for turma in turmas
+                        if turma.get("codigo") == disciplina.codigo
+                    ],
+                )
+                for disciplina in disciplinas
+            ]
+        }
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="O serviço de turma retornou uma turma inválida",
+        ) from exc
 
 
 @router.get(
