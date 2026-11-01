@@ -54,6 +54,7 @@ poetry run ruff check
 - Ao cadastrar ou alterar um aluno, o `curso_id` precisa ser um UUID de curso
   existente e ativo no `academico`.
 - Em uma atualização de turma, se `aluno_ids` não vier no corpo, as matrículas são mantidas.
+- Avisos são objetos com `id`, `autor`, `data` (AAAA-MM-DD), `titulo` e `mensagem`. O `id` é gerado pelo serviço quando não vier no corpo.
 
 ## Rotas
 
@@ -101,6 +102,10 @@ As migrações ficam em `migrations/versions`. A revisão `3933ef2c8424` adicion
 `codigo`, `curso_id`, `periodo_letivo` e `capacidade` a `turmas` e torna
 `professor_id` anulável. Bancos criados apenas pelas revisões anteriores precisam
 dela para que o código funcione.
+
+A revisão `5c2f8a1d9e7b` converte os avisos em texto das turmas existentes para objetos.
+Os avisos ficam com autor `Não informado`, título `Aviso` e data de criação da turma.
+O downgrade devolve só o texto de `mensagem`.
 
 Gere uma nova revisão com `poetry run alembic revision --autogenerate -m "descrição"`
 e aplique com `poetry run alembic upgrade head`.
