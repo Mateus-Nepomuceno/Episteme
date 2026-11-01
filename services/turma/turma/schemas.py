@@ -117,6 +117,23 @@ class TurmaList(BaseModel):
     turmas: list[TurmaPublic]
 
 
+class TurmaAlunoPublic(BaseModel):
+    id: UUID
+    nome: str
+    codigo: str | None
+    materia: str
+    curso_id: UUID | None
+    periodo_letivo: str | None
+    capacidade: int | None
+    professor: ProfessorTurmaPublic | None
+    horarios: list[HorarioTurmaPublic]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TurmaAlunoList(BaseModel):
+    turmas: list[TurmaAlunoPublic]
+
+
 class TurmaOfertaPublic(BaseModel):
     id: UUID
     nome: str
