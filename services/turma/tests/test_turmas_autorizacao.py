@@ -9,6 +9,19 @@ CURSO_ID = '11111111-1111-1111-1111-111111111111'
 PERIODO = '2026.2'
 CAPACIDADE = 30
 CAPACIDADE_NOVA = 50
+AVISO_ANTIGO = {
+    'id': '7d0c2f0e-6a2b-4c55-9a53-1f1f1f1f1f01',
+    'autor': 'Professor',
+    'data': '2026-10-01',
+    'titulo': 'Aviso antigo',
+    'mensagem': 'aviso antigo',
+}
+AVISO_NOVO = {
+    'autor': 'Professor',
+    'data': '2026-10-05',
+    'titulo': 'Aviso novo',
+    'mensagem': 'aviso novo',
+}
 
 
 def como(usuario_id, e_admin=False):
@@ -35,7 +48,7 @@ def cenario(session, com_aluno=True):
         professor_id=professor.id,
         professor=professor,
         alunos=[aluno] if com_aluno else [],
-        avisos=['aviso antigo'],
+        avisos=[AVISO_ANTIGO],
         documentos=[],
     )
     session.add(turma)
@@ -97,7 +110,7 @@ def test_professor_responsavel_edita_conteudo(client, session):
 
     resposta = client.put(
         f'/turmas/{turma.id}',
-        json=corpo(turma, professor, nome='Novo nome', materia='Cálculo', avisos=['aviso novo'], documentos=['./a.pdf']),
+        json=corpo(turma, professor, nome='Novo nome', materia='Cálculo', avisos=[AVISO_NOVO], documentos=['./a.pdf']),
     )
 
     assert resposta.status_code == HTTPStatus.OK
@@ -105,7 +118,7 @@ def test_professor_responsavel_edita_conteudo(client, session):
     persistida = session.get(Turma, turma.id)
     assert persistida.nome == 'Novo nome'
     assert persistida.materia == 'Cálculo'
-    assert persistida.avisos == ['aviso novo']
+    assert [aviso['mensagem'] for aviso in persistida.avisos] == ['aviso novo']
     assert persistida.documentos == ['./a.pdf']
 
 
