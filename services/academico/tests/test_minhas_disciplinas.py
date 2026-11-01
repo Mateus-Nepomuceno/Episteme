@@ -230,3 +230,20 @@ def test_sem_token_responde_401(client):
     resposta = client.get('/matricula/minhas-disciplinas')
 
     assert resposta.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_usuario_sem_cadastro_de_aluno_recebe_404(client, autenticar):
+    autenticar()
+
+    def get(url, params=None, headers=None, timeout=None):
+        return httpx.Response(
+            404,
+            json={'detail': 'Aluno não encontrado'},
+            request=httpx.Request('GET', url),
+        )
+
+    with patch('academico.turma_client.httpx.get', side_effect=get):
+        resposta = client.get('/matricula/minhas-disciplinas')
+
+    assert resposta.status_code == HTTPStatus.NOT_FOUND
+    assert resposta.json()['detail'] == 'Cadastro de aluno não encontrado'
