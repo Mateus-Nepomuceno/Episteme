@@ -23,6 +23,7 @@ Crie `services/turma/.env` com estas variáveis:
 | `ALGORITHM` | Algoritmo do JWT, por exemplo `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token em minutos. |
 | `ACADEMICO_API_URL` | URL base do serviço `academico`, por exemplo `http://127.0.0.1:8002`. Sem ela, o cadastro de aluno responde 503. |
+| `CORS_ORIGINS` | Origens do navegador permitidas, separadas por vírgula. Padrão `http://localhost:5173`. |
 
 Não versione o `.env`. Ele já está no `.gitignore`.
 

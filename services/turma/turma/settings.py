@@ -12,3 +12,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = Field(init=False)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(init=False)
     ACADEMICO_API_URL: str | None = None
+    CORS_ORIGINS: str = 'http://localhost:5173'
+
+    @property
+    def origens_cors(self) -> list[str]:
+        return [
+            origem.strip()
+            for origem in self.CORS_ORIGINS.split(',')
+            if origem.strip()
+        ]
