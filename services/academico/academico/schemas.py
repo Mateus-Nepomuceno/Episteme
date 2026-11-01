@@ -189,6 +189,23 @@ class ProfessorTurmaResponse(BaseModel):
     matricula_id: str
 
 
+class TurmaMatriculadaResponse(BaseModel):
+    id: UUID
+    nome: str
+    codigo: str | None = None
+    periodo_letivo: str | None = None
+    professor: ProfessorTurmaResponse | None = None
+    horarios: list[HorarioTurmaResponse] = Field(default_factory=list)
+
+
+class DisciplinaMatriculadaResponse(DisciplinaPublic):
+    turmas: list[TurmaMatriculadaResponse]
+
+
+class MinhasDisciplinasResponse(BaseModel):
+    disciplinas: list[DisciplinaMatriculadaResponse]
+
+
 class TurmaDisponivelResponse(BaseModel):
     id: UUID
     nome: str
