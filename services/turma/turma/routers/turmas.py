@@ -19,6 +19,7 @@ from turma.models import (
 )
 from turma.schemas import (
     PERIODO_LETIVO_PATTERN,
+    AvisoTurma,
     FiltroPaginacao,
     HorarioTurmaPublic,
     Mensagem,
@@ -66,6 +67,10 @@ def _turma_visivel(turma: Turma, current_user: CurrentUser | None) -> TurmaPubli
         return dados
 
     return dados.model_copy(update={'alunos': []})
+
+
+def _serializar_avisos(avisos: list[AvisoTurma]) -> list[dict]:
+    return [aviso.model_dump(mode='json') for aviso in avisos]
 
 
 def _exigir_apenas_conteudo(db_turma: Turma, turma: TurmaCreate) -> None:
@@ -233,7 +238,7 @@ def create_turma(
         capacidade=turma.capacidade,
         professor_id=turma.professor_id,
         documentos=turma.documentos,
-        avisos=turma.avisos,
+        avisos=_serializar_avisos(turma.avisos),
         professor=professor,
         alunos=alunos
     )
@@ -375,7 +380,7 @@ def update_turma(
     db_turma.nome = turma.nome
     db_turma.materia = turma.materia
     db_turma.documentos = turma.documentos
-    db_turma.avisos = turma.avisos
+    db_turma.avisos = _serializar_avisos(turma.avisos)
 
     if current_user.e_admin:
         db_turma.codigo = turma.codigo

@@ -1,5 +1,5 @@
-from datetime import datetime, time
-from uuid import UUID
+from datetime import date, datetime, time
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -68,6 +68,14 @@ class ProfessorList(BaseModel):
 PERIODO_LETIVO_PATTERN = r'^\d{4}\.[12]$'
 
 
+class AvisoTurma(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    autor: str = Field(min_length=1)
+    data: date
+    titulo: str = Field(min_length=1)
+    mensagem: str = Field(min_length=1)
+
+
 class TurmaCreate(BaseModel):
     nome: str
     codigo: str
@@ -79,7 +87,7 @@ class TurmaCreate(BaseModel):
 
     aluno_ids: list[UUID] = Field(default_factory=list)
     documentos: list[str] = Field(default_factory=list)
-    avisos: list[str] = Field(default_factory=list)
+    avisos: list[AvisoTurma] = Field(default_factory=list)
 
 
 class HorarioTurmaPublic(BaseModel):
@@ -108,7 +116,7 @@ class TurmaPublic(BaseModel):
     alunos: list[AlunoPublic]
     horarios: list[HorarioTurmaPublic]
     documentos: list[str]
-    avisos: list[str]
+    avisos: list[AvisoTurma]
     criado_em: datetime
     model_config = ConfigDict(from_attributes=True)
 
