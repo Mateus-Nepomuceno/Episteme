@@ -117,3 +117,32 @@ def listar_ofertas(filtros: dict, token: str) -> list:
             return turmas
 
         offset += TAMANHO_PAGINA
+
+
+def listar_turmas_do_aluno(aluno_id, token: str) -> list:
+    resposta = _requisitar(f'/turmas/aluno/{aluno_id}', token)
+
+    if resposta.status_code == HTTPStatus.FORBIDDEN:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail=MSG_PERMISSAO_NEGADA
+        )
+
+    if resposta.is_error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY, detail=MSG_ERRO
+        )
+
+    try:
+        turmas = resposta.json()['turmas']
+    except (ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=MSG_RESPOSTA_INVALIDA,
+        ) from exc
+
+    if not isinstance(turmas, list):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY, detail=MSG_LISTAGEM_INVALIDA
+        )
+
+    return turmas
