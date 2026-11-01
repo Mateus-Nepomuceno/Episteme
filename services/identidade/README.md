@@ -20,6 +20,7 @@ Crie `services/identidade/.env` com estas variáveis:
 | `SECRET_KEY` | Chave de assinatura do JWT. Deve ser igual nos três serviços. |
 | `ALGORITHM` | Algoritmo do JWT, por exemplo `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token em minutos. |
+| `CORS_ORIGINS` | Origens do navegador permitidas, separadas por vírgula. Padrão `http://localhost:5173`. |
 
 Não versione o `.env`. Ele já está no `.gitignore`.
 

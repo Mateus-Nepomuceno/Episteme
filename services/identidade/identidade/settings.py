@@ -11,3 +11,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(init=False)
     ALGORITHM: str = Field(init=False)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(init=False)
+    CORS_ORIGINS: str = 'http://localhost:5173'
+
+    @property
+    def origens_cors(self) -> list[str]:
+        return [
+            origem.strip()
+            for origem in self.CORS_ORIGINS.split(',')
+            if origem.strip()
+        ]
