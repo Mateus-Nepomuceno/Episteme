@@ -84,6 +84,7 @@ para administrador ou para o professor da turma. Os demais recebem `alunos` vazi
 | DELETE | `/professores/{professor_id}` | Administrador |
 | POST | `/turmas/` | Administrador |
 | GET | `/turmas/` | Público. Alunos aparecem só para administrador ou professor da turma. |
+| GET | `/turmas/aluno/{aluno_id}` | Dono ou administrador. Lista as turmas do aluno com professor e horários, sem a lista de alunos. |
 | GET | `/turmas/ofertas` | Autenticado. Filtros: curso, período, disciplina, código, dia e faixa de horário. |
 | GET | `/turmas/{turma_id}` | Público. Alunos aparecem só para administrador ou professor da turma. |
 | PUT | `/turmas/{turma_id}` | Professor responsável (conteúdo) ou administrador (demais campos). |

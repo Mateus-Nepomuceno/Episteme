@@ -9,13 +9,21 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from turma.database import get_session
-from turma.models import Aluno, DiaSemana, Horario, Professor, Turma
+from turma.models import (
+    Aluno,
+    DiaSemana,
+    Horario,
+    Professor,
+    Turma,
+    TurmaAluno,
+)
 from turma.schemas import (
     PERIODO_LETIVO_PATTERN,
     FiltroPaginacao,
     HorarioTurmaPublic,
     Mensagem,
     ProfessorTurmaPublic,
+    TurmaAlunoList,
     TurmaCreate,
     TurmaList,
     TurmaOfertaList,
@@ -25,6 +33,7 @@ from turma.schemas import (
 from turma.security import (
     CurrentUser,
     exigir_admin,
+    exigir_dono_ou_admin,
     get_current_user,
     get_usuario_opcional,
 )
@@ -284,6 +293,34 @@ def read_ofertas_turmas(
     pagina = turmas_filtradas[filter.offset : filter.offset + filter.limit]
 
     return {'turmas': [_montar_oferta(turma) for turma in pagina]}
+
+
+@router.get(
+    '/aluno/{aluno_id}',
+    response_model=TurmaAlunoList,
+)
+def read_turmas_aluno(
+    aluno_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
+
+    if not aluno:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='Aluno não encontrado'
+        )
+
+    exigir_dono_ou_admin(current_user, aluno.usuario_id)
+
+    turmas = session.scalars(
+        select(Turma)
+        .join(TurmaAluno, TurmaAluno.turma_id == Turma.id)
+        .where(TurmaAluno.aluno_id == aluno.id)
+        .order_by(Turma.nome, Turma.id)
+    ).all()
+
+    return {'turmas': turmas}
 
 
 @router.get('/{turma_id}', response_model=TurmaPublic)
