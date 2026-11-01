@@ -9,13 +9,22 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from turma.database import get_session
-from turma.models import Aluno, DiaSemana, Horario, Professor, Turma
+from turma.models import (
+    Aluno,
+    DiaSemana,
+    Horario,
+    Professor,
+    Turma,
+    TurmaAluno,
+)
 from turma.schemas import (
     PERIODO_LETIVO_PATTERN,
+    AvisoTurma,
     FiltroPaginacao,
     HorarioTurmaPublic,
     Mensagem,
     ProfessorTurmaPublic,
+    TurmaAlunoList,
     TurmaCreate,
     TurmaList,
     TurmaOfertaList,
@@ -25,6 +34,7 @@ from turma.schemas import (
 from turma.security import (
     CurrentUser,
     exigir_admin,
+    exigir_dono_ou_admin,
     get_current_user,
     get_usuario_opcional,
 )
@@ -57,6 +67,10 @@ def _turma_visivel(turma: Turma, current_user: CurrentUser | None) -> TurmaPubli
         return dados
 
     return dados.model_copy(update={'alunos': []})
+
+
+def _serializar_avisos(avisos: list[AvisoTurma]) -> list[dict]:
+    return [aviso.model_dump(mode='json') for aviso in avisos]
 
 
 def _exigir_apenas_conteudo(db_turma: Turma, turma: TurmaCreate) -> None:
@@ -224,7 +238,7 @@ def create_turma(
         capacidade=turma.capacidade,
         professor_id=turma.professor_id,
         documentos=turma.documentos,
-        avisos=turma.avisos,
+        avisos=_serializar_avisos(turma.avisos),
         professor=professor,
         alunos=alunos
     )
@@ -286,6 +300,34 @@ def read_ofertas_turmas(
     return {'turmas': [_montar_oferta(turma) for turma in pagina]}
 
 
+@router.get(
+    '/aluno/{aluno_id}',
+    response_model=TurmaAlunoList,
+)
+def read_turmas_aluno(
+    aluno_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    aluno = session.scalar(select(Aluno).where(Aluno.id == aluno_id))
+
+    if not aluno:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='Aluno não encontrado'
+        )
+
+    exigir_dono_ou_admin(current_user, aluno.usuario_id)
+
+    turmas = session.scalars(
+        select(Turma)
+        .join(TurmaAluno, TurmaAluno.turma_id == Turma.id)
+        .where(TurmaAluno.aluno_id == aluno.id)
+        .order_by(Turma.nome, Turma.id)
+    ).all()
+
+    return {'turmas': turmas}
+
+
 @router.get('/{turma_id}', response_model=TurmaPublic)
 def read_turma(
     turma_id: UUID,
@@ -338,7 +380,7 @@ def update_turma(
     db_turma.nome = turma.nome
     db_turma.materia = turma.materia
     db_turma.documentos = turma.documentos
-    db_turma.avisos = turma.avisos
+    db_turma.avisos = _serializar_avisos(turma.avisos)
 
     if current_user.e_admin:
         db_turma.codigo = turma.codigo

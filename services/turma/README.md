@@ -23,6 +23,7 @@ Crie `services/turma/.env` com estas variáveis:
 | `ALGORITHM` | Algoritmo do JWT, por exemplo `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token em minutos. |
 | `ACADEMICO_API_URL` | URL base do serviço `academico`, por exemplo `http://127.0.0.1:8002`. Sem ela, o cadastro de aluno responde 503. |
+| `CORS_ORIGINS` | Origens do navegador permitidas, separadas por vírgula. Padrão `http://localhost:5173`. |
 
 Não versione o `.env`. Ele já está no `.gitignore`.
 
@@ -53,6 +54,7 @@ poetry run ruff check
 - Ao cadastrar ou alterar um aluno, o `curso_id` precisa ser um UUID de curso
   existente e ativo no `academico`.
 - Em uma atualização de turma, se `aluno_ids` não vier no corpo, as matrículas são mantidas.
+- Avisos são objetos com `id`, `autor`, `data` (AAAA-MM-DD), `titulo` e `mensagem`. O `id` é gerado pelo serviço quando não vier no corpo.
 
 ## Rotas
 
@@ -83,6 +85,7 @@ para administrador ou para o professor da turma. Os demais recebem `alunos` vazi
 | DELETE | `/professores/{professor_id}` | Administrador |
 | POST | `/turmas/` | Administrador |
 | GET | `/turmas/` | Público. Alunos aparecem só para administrador ou professor da turma. |
+| GET | `/turmas/aluno/{aluno_id}` | Dono ou administrador. Lista as turmas do aluno com professor e horários, sem a lista de alunos. |
 | GET | `/turmas/ofertas` | Autenticado. Filtros: curso, período, disciplina, código, dia e faixa de horário. |
 | GET | `/turmas/{turma_id}` | Público. Alunos aparecem só para administrador ou professor da turma. |
 | PUT | `/turmas/{turma_id}` | Professor responsável (conteúdo) ou administrador (demais campos). |
@@ -99,6 +102,10 @@ As migrações ficam em `migrations/versions`. A revisão `3933ef2c8424` adicion
 `codigo`, `curso_id`, `periodo_letivo` e `capacidade` a `turmas` e torna
 `professor_id` anulável. Bancos criados apenas pelas revisões anteriores precisam
 dela para que o código funcione.
+
+A revisão `5c2f8a1d9e7b` converte os avisos em texto das turmas existentes para objetos.
+Os avisos ficam com autor `Não informado`, título `Aviso` e data de criação da turma.
+O downgrade devolve só o texto de `mensagem`.
 
 Gere uma nova revisão com `poetry run alembic revision --autogenerate -m "descrição"`
 e aplique com `poetry run alembic upgrade head`.
