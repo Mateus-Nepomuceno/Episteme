@@ -181,3 +181,12 @@ class HorarioPublic(BaseModel):
 
 class HorarioList(BaseModel):
     horarios: list[HorarioPublic]
+
+
+class AvisoAluno(AvisoTurma):
+    turma_id: UUID
+    disciplina: str
+
+
+class AvisosAlunoList(BaseModel):
+    avisos: list[AvisoAluno]
