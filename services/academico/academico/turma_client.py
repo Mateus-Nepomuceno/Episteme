@@ -146,3 +146,24 @@ def listar_turmas_do_aluno(aluno_id, token: str) -> list:
         )
 
     return turmas
+
+
+def consultar_turma(caminho: str, token: str):
+    resposta = _requisitar(caminho, token)
+
+    if resposta.status_code == HTTPStatus.FORBIDDEN:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail=MSG_PERMISSAO_NEGADA
+        )
+
+    if resposta.is_error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY, detail=MSG_ERRO
+        )
+
+    try:
+        return resposta.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY, detail=MSG_RESPOSTA_INVALIDA
+        ) from exc

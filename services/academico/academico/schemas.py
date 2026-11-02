@@ -1,4 +1,4 @@
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -229,3 +229,61 @@ class SituacaoAcademicaAlunoPublic(BaseModel):
     matricula: str
     curso: CursoPublic
     ativo: bool
+
+
+class ResumoAluno(BaseModel):
+    media_geral: float | None
+    frequencia_geral: int | None
+    horas_complementares: int
+
+
+class PendenciaAluno(BaseModel):
+    id: UUID
+    titulo: str
+    disciplina: str
+    turma_id: UUID
+    tipo: str
+    prazo: datetime
+    situacao: str
+
+
+class PendenciasAluno(BaseModel):
+    pendencias: list[PendenciaAluno]
+
+
+class NotaRecenteAluno(BaseModel):
+    avaliacao_id: UUID
+    nome: str
+    disciplina: str
+    turma_id: UUID
+    data: date
+    valor: float
+
+
+class NotasRecentesAluno(BaseModel):
+    notas: list[NotaRecenteAluno]
+
+
+class CompromissoAluno(BaseModel):
+    id: UUID
+    titulo: str
+    tipo: str
+    data: datetime
+    disciplina: str
+    turma_id: UUID
+
+
+class CompromissosAluno(BaseModel):
+    compromissos: list[CompromissoAluno]
+
+
+class ProximaAulaAluno(BaseModel):
+    turma_id: UUID
+    disciplina: str
+    data: datetime
+    horario_fim: time
+    local: str
+
+
+class ProximasAulasAluno(BaseModel):
+    aulas: list[ProximaAulaAluno]
