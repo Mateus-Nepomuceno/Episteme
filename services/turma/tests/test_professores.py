@@ -62,10 +62,10 @@ def test_update_professor(client, session):
     new_uid = uuid4()
     response = client.put(
         f'/professores/{professor.id}',
-        json={'usuario_id': str(new_uid), 'matricula_id': '1234', 'ativo': False},
+        json={'usuario_id': str(new_uid), 'matricula_id': '123', 'ativo': False},
     )
     assert response.status_code == HTTPStatus.OK
-    assert response.json()['matricula_id'] == '1234'
+    assert response.json()['matricula_id'] == '123'
     app.dependency_overrides.clear()
 
 
@@ -109,7 +109,7 @@ def test_update_professor_conflict(client, session):
 
     response = client.put(
         f'/professores/{professor1.id}',
-        json={'usuario_id': str(uid2), 'matricula_id': '124', 'ativo': False},
+        json={'usuario_id': str(uid2), 'matricula_id': '123', 'ativo': False},
     )
     assert response.status_code == HTTPStatus.CONFLICT
     app.dependency_overrides.clear()

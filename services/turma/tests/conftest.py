@@ -57,3 +57,13 @@ def usuario_administrador():
     )
     yield
     app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture(autouse=True)
+def identidade_matricula():
+    with patch(
+        'turma.routers.alunos.definir_matricula', return_value=True
+    ), patch(
+        'turma.routers.professores.definir_matricula', return_value=True
+    ):
+        yield

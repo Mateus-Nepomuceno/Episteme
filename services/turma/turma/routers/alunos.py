@@ -12,6 +12,10 @@ from turma.academico_client import (
     consultar_curso,
 )
 from turma.database import get_session
+from turma.identidade_client import (
+    buscar_usuario_por_matricula,
+    definir_matricula,
+)
 from turma.models import Aluno, Turma, TurmaAluno
 from turma.schemas import (
     AlunoCreate,
@@ -75,6 +79,12 @@ def create_aluno(
         )
 
     _exigir_curso_valido(aluno.curso_id)
+
+    if not definir_matricula(aluno.usuario_id, aluno.matricula_id):
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Não foi possível vincular a matrícula ao usuário',
+        )
 
     db_aluno = Aluno(
         usuario_id=aluno.usuario_id,
@@ -175,6 +185,13 @@ def read_aluno_matricula_id(
     aluno = session.scalar(select(Aluno).where(Aluno.matricula_id == aluno_matricula_id))
 
     if not aluno:
+        usuario = buscar_usuario_por_matricula(aluno_matricula_id)
+        if usuario is not None:
+            aluno = session.scalar(
+                select(Aluno).where(Aluno.usuario_id == UUID(usuario['id']))
+            )
+
+    if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
 
     exigir_dono_ou_admin(current_user, aluno.usuario_id)
@@ -199,9 +216,14 @@ def update_aluno(
 
     _exigir_curso_valido(aluno.curso_id)
 
+    if aluno.matricula_id != db_aluno.matricula_id:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='A matrícula não pode ser alterada',
+        )
+
     try:
         db_aluno.usuario_id = aluno.usuario_id
-        db_aluno.matricula_id = aluno.matricula_id
         db_aluno.curso_id = aluno.curso_id
         db_aluno.ativo = aluno.ativo
         session.commit()

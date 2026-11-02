@@ -272,3 +272,15 @@ class Presenca:
         ForeignKey('alunos.id'), primary_key=True
     )
     presente: Mapped[bool]
+
+
+@mapped_as_dataclass(table_registry)
+class UsuarioCache:
+    __tablename__ = 'usuarios_cache'
+
+    usuario_id: Mapped[UUID] = mapped_column(primary_key=True)
+    nome: Mapped[str]
+    matricula: Mapped[str | None] = mapped_column(default=None)
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now
+    )

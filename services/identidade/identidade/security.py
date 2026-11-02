@@ -79,3 +79,38 @@ def exigir_admin(
             status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
         )
     return current_user
+
+
+SERVICOS_INTERNOS = ('turma', 'academico')
+DURACAO_TOKEN_SERVICO_MINUTOS = 5
+
+
+def criar_token_servico(nome: str) -> str:
+    expire = datetime.now(tz=ZoneInfo('UTC')) + timedelta(
+        minutes=DURACAO_TOKEN_SERVICO_MINUTOS
+    )
+    return encode(
+        {'sub': f'servico:{nome}', 'servico': nome, 'exp': expire},
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+
+def exigir_servico(token: str = Depends(oauth2_scheme)) -> str:
+    try:
+        payload = decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail='Credencial de serviço inválida',
+        )
+
+    nome = payload.get('servico')
+    esperado = f'servico:{nome}'
+    if nome not in SERVICOS_INTERNOS or payload.get('sub') != esperado:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail='Permissão negada'
+        )
+    return nome

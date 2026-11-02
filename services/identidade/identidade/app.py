@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from identidade.routers import auth, usuarios
+from identidade.routers import auth, internos, usuarios
 from identidade.schemas import Mensagem
 from identidade.settings import Settings
 
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(usuarios.router)
+app.include_router(internos.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Mensagem)

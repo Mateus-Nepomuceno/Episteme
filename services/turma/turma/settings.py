@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ACADEMICO_API_URL: str | None = None
     CORS_ORIGINS: str = 'http://localhost:5173'
     DIRETORIO_ARMAZENAMENTO: str = 'armazenamento'
+    IDENTIDADE_API_URL: str = 'http://localhost:8000'
 
     @property
     def origens_cors(self) -> list[str]:
