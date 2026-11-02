@@ -2,7 +2,7 @@ import enum
 from datetime import date, datetime, time
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Time
+from sqlalchemy import JSON, DateTime, ForeignKey, Time, UniqueConstraint
 from sqlalchemy.orm import (
     Mapped,
     mapped_as_dataclass,
@@ -235,3 +235,28 @@ class Nota:
     lancada_em: Mapped[datetime] = mapped_column(
         DateTime, init=False, default=datetime.now
     )
+
+
+@mapped_as_dataclass(table_registry)
+class Chamada:
+    __tablename__ = 'chamadas'
+    __table_args__ = (UniqueConstraint('turma_id', 'data'),)
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    turma_id: Mapped[UUID] = mapped_column(ForeignKey('turmas.id'))
+    data: Mapped[date]
+
+
+@mapped_as_dataclass(table_registry)
+class Presenca:
+    __tablename__ = 'presencas'
+
+    chamada_id: Mapped[UUID] = mapped_column(
+        ForeignKey('chamadas.id'), primary_key=True
+    )
+    aluno_id: Mapped[UUID] = mapped_column(
+        ForeignKey('alunos.id'), primary_key=True
+    )
+    presente: Mapped[bool]
