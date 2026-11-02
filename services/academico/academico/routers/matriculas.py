@@ -39,6 +39,7 @@ from academico.security import (
 )
 from academico.turma_client import (
     buscar_aluno_por_usuario,
+    consultar_turma,
     listar_ofertas,
     listar_turmas_do_aluno,
 )
@@ -374,6 +375,14 @@ def consultar_minhas_disciplinas(
         ) from exc
 
     turmas = listar_turmas_do_aluno(aluno_id, current_user.token)
+
+    for turma in turmas:
+        turma.update(
+            consultar_turma(
+                f'/alunos/me/turmas/{turma["id"]}/desempenho',
+                current_user.token,
+            )
+        )
 
     codigos = {turma["codigo"] for turma in turmas if turma.get("codigo")}
 
