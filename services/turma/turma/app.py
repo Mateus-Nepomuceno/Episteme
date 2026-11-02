@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from turma.routers import (
     alunos,
     atividades,
+    avaliacoes,
     horarios,
     modulos,
     professores,
@@ -31,6 +32,7 @@ app.include_router(turmas.router)
 app.include_router(horarios.router)
 app.include_router(modulos.router)
 app.include_router(atividades.router)
+app.include_router(avaliacoes.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Mensagem)
