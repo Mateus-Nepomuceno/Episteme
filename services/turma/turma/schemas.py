@@ -52,6 +52,7 @@ class ProfessorCreate(BaseModel):
     usuario_id: UUID
     matricula_id: str
     ativo: bool = True
+    nome: str | None = None
 
 
 class ProfessorPublic(BaseModel):
@@ -59,6 +60,7 @@ class ProfessorPublic(BaseModel):
     usuario_id: UUID
     matricula_id: str
     ativo: bool
+    nome: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -105,6 +107,13 @@ class ProfessorTurmaPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProfessorComNomePublic(BaseModel):
+    id: UUID
+    matricula_id: str
+    nome: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TurmaPublic(BaseModel):
     id: UUID
     nome: str
@@ -134,7 +143,7 @@ class TurmaAlunoPublic(BaseModel):
     curso_id: UUID | None
     periodo_letivo: str | None
     capacidade: int | None
-    professor: ProfessorTurmaPublic | None
+    professor: ProfessorComNomePublic | None
     horarios: list[HorarioTurmaPublic]
     encerrada_em: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
