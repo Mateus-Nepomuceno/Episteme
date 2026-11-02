@@ -128,3 +128,45 @@ class Horario:
 
     professor: Mapped[Professor] = relationship(back_populates='horarios', init=False)
     turma: Mapped[Turma] = relationship(back_populates='horarios', init=False)
+
+
+@mapped_as_dataclass(table_registry)
+class Modulo:
+    __tablename__ = 'modulos'
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    turma_id: Mapped[UUID] = mapped_column(ForeignKey('turmas.id'))
+    titulo: Mapped[str]
+    ordem: Mapped[int]
+    publicado: Mapped[bool] = mapped_column(default=True)
+
+
+@mapped_as_dataclass(table_registry)
+class Material:
+    __tablename__ = 'materiais'
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    modulo_id: Mapped[UUID] = mapped_column(ForeignKey('modulos.id'))
+    titulo: Mapped[str]
+    tipo: Mapped[str]
+    ordem: Mapped[int]
+    descricao: Mapped[str | None] = mapped_column(default=None)
+
+
+@mapped_as_dataclass(table_registry)
+class AcessoMaterial:
+    __tablename__ = 'acessos_material'
+
+    material_id: Mapped[UUID] = mapped_column(
+        ForeignKey('materiais.id'), primary_key=True
+    )
+    aluno_id: Mapped[UUID] = mapped_column(
+        ForeignKey('alunos.id'), primary_key=True
+    )
+    aberto_em: Mapped[datetime] = mapped_column(
+        DateTime, init=False, default=datetime.now
+    )
