@@ -23,3 +23,4 @@ class Usuario:
         init=False, server_default=func.now()
     )
     e_admin: Mapped[bool] = mapped_column(default=False)
+    matricula: Mapped[str | None] = mapped_column(unique=True, default=None)

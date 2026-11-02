@@ -44,6 +44,7 @@ def user(session):
         nome='joana',
         senha=get_password_hash('senha_limpa'),
         email='joana@teste.com',
+        matricula='2023000001',
         cpf='123.456.789-09',
         telefone='+5511999999999',
     )
@@ -56,7 +57,8 @@ def user(session):
 @pytest.fixture
 def user_token(client, user):
     response = client.post(
-        '/auth/token', data={'username': user.email, 'password': 'senha_limpa'}
+        '/auth/token',
+        data={'username': user.matricula, 'password': 'senha_limpa'},
     )
     return response.json()['access_token']
 
@@ -67,6 +69,7 @@ def admin(session):
         nome='admin_joana',
         senha=get_password_hash('senha_admin'),
         email='admin@teste.com',
+        matricula='ADM0001',
         cpf='529.982.247-25',
         telefone='+5511888888888',
         e_admin=True,
@@ -81,6 +84,6 @@ def admin(session):
 def admin_token(client, admin):
     response = client.post(
         '/auth/token',
-        data={'username': admin.email, 'password': 'senha_admin'},
+        data={'username': admin.matricula, 'password': 'senha_admin'},
     )
     return response.json()['access_token']

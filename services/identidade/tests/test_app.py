@@ -10,7 +10,7 @@ def test_root(client):
 def test_get_token(client, user):
     response = client.post(
         '/auth/token',
-        data={'username': user.email, 'password': 'senha_limpa'},
+        data={'username': user.matricula, 'password': 'senha_limpa'},
     )
     token = response.json()
 
