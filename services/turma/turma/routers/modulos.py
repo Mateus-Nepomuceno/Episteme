@@ -12,6 +12,7 @@ from turma.permissoes import (
     pode_acessar_turma,
     pode_gerenciar_turma,
 )
+from turma.progresso import status_modulo
 from turma.schemas import (
     AcessoMaterialPublic,
     MaterialCreate,
@@ -49,7 +50,9 @@ def _permissao_negada() -> HTTPException:
     )
 
 
-def _modulo_publico(session: Session, modulo: Modulo) -> ModuloPublic:
+def _modulo_publico(
+    session: Session, modulo: Modulo, status: str | None = None
+) -> ModuloPublic:
     materiais = session.scalars(
         select(Material)
         .where(Material.modulo_id == modulo.id)
@@ -60,6 +63,7 @@ def _modulo_publico(session: Session, modulo: Modulo) -> ModuloPublic:
         titulo=modulo.titulo,
         ordem=modulo.ordem,
         publicado=modulo.publicado,
+        status=status,
         materiais=[MaterialPublic.model_validate(m) for m in materiais],
     )
 
@@ -75,13 +79,23 @@ def read_modulos(
     if not pode_acessar_turma(session, current_user, turma):
         raise _permissao_negada()
 
+    gerencia = pode_gerenciar_turma(current_user, turma)
     consulta = select(Modulo).where(Modulo.turma_id == turma.id)
-    if not pode_gerenciar_turma(current_user, turma):
+    if not gerencia:
         consulta = consulta.where(Modulo.publicado.is_(True))
 
     modulos = session.scalars(consulta.order_by(Modulo.ordem, Modulo.titulo)).all()
 
-    return {'modulos': [_modulo_publico(session, m) for m in modulos]}
+    if gerencia:
+        return {'modulos': [_modulo_publico(session, m) for m in modulos]}
+
+    aluno = session.scalar(select(Aluno).where(Aluno.usuario_id == current_user.id))
+    return {
+        'modulos': [
+            _modulo_publico(session, m, status_modulo(session, m, aluno.id))
+            for m in modulos
+        ]
+    }
 
 
 @router.post(
