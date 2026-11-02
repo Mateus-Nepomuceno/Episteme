@@ -359,3 +359,10 @@ class DesempenhoAluno(BaseModel):
     media: float | None
     frequencia: int | None
     progresso: int | None
+
+
+class AvisoCreate(BaseModel):
+    autor: str = Field(min_length=1)
+    data: date
+    titulo: str = Field(min_length=1)
+    mensagem: str = Field(min_length=1)
