@@ -19,3 +19,4 @@ htmlcov/
 database.db
 
 .agents
+armazenamento/

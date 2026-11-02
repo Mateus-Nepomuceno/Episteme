@@ -1,0 +1,66 @@
+name: episteme-api
+
+x-ambiente: &ambiente
+  SECRET_KEY: ${SECRET_KEY:-dev-troque-esta-chave-secreta}
+  ALGORITHM: HS256
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  CORS_ORIGINS: http://localhost:5173
+  SEED: ${SEED:-1}
+  SEED_SENHA: ${SEED_SENHA:-senha123456}
+
+services:
+  identidade:
+    build: ./services/identidade
+    environment:
+      <<: *ambiente
+      DATABASE_URL: sqlite:////data/identidade.db
+    ports:
+      - "${PORTA_IDENTIDADE:-9000}:8000"
+    volumes:
+      - identidade-data:/data
+
+  academico:
+    build: ./services/academico
+    environment:
+      <<: *ambiente
+      DATABASE_URL: sqlite:////data/academico.db
+      IDENTIDADE_API_URL: http://identidade:8000
+      TURMA_API_URL: http://turma:8000
+    ports:
+      - "${PORTA_ACADEMICO:-9002}:8000"
+    volumes:
+      - academico-data:/data
+    depends_on:
+      - identidade
+
+  turma:
+    build: ./services/turma
+    environment:
+      <<: *ambiente
+      DATABASE_URL: sqlite:////data/turma.db
+      IDENTIDADE_API_URL: http://identidade:8000
+      ACADEMICO_API_URL: http://academico:8000
+      DIRETORIO_ARMAZENAMENTO: /data/armazenamento
+    ports:
+      - "${PORTA_TURMA:-9001}:8000"
+    volumes:
+      - turma-data:/data
+    depends_on:
+      - identidade
+      - academico
+
+  comunicacao:
+    build: ./services/comunicacao
+    environment:
+      <<: *ambiente
+      DATABASE_URL: sqlite:////data/comunicacao.db
+    ports:
+      - "${PORTA_COMUNICACAO:-9003}:8000"
+    volumes:
+      - comunicacao-data:/data
+
+volumes:
+  identidade-data:
+  academico-data:
+  turma-data:
+  comunicacao-data:
