@@ -1,4 +1,5 @@
 from datetime import date, datetime, time
+from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -190,3 +191,46 @@ class AvisoAluno(AvisoTurma):
 
 class AvisosAlunoList(BaseModel):
     avisos: list[AvisoAluno]
+
+
+TipoMaterial = Literal['arquivo', 'video', 'link']
+
+
+class ModuloCreate(BaseModel):
+    titulo: str = Field(min_length=1)
+    ordem: int = Field(ge=0)
+    publicado: bool = True
+
+
+class MaterialCreate(BaseModel):
+    titulo: str = Field(min_length=1)
+    descricao: str | None = None
+    tipo: TipoMaterial
+    ordem: int = Field(ge=0)
+
+
+class MaterialPublic(BaseModel):
+    id: UUID
+    titulo: str
+    descricao: str | None
+    tipo: str
+    ordem: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ModuloPublic(BaseModel):
+    id: UUID
+    titulo: str
+    ordem: int
+    publicado: bool
+    materiais: list[MaterialPublic]
+
+
+class ModuloList(BaseModel):
+    modulos: list[ModuloPublic]
+
+
+class AcessoMaterialPublic(BaseModel):
+    material_id: UUID
+    aberto_em: datetime
+    model_config = ConfigDict(from_attributes=True)
