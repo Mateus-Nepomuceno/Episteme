@@ -111,3 +111,16 @@ class PeriodoMatricula:
     status: Mapped[str] = mapped_column(
         default="agendado",
     )
+
+
+@mapped_as_dataclass(table_registry)
+class AtividadeComplementar:
+    __tablename__ = 'atividades_complementares'
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    aluno_id: Mapped[UUID]
+    descricao: Mapped[str]
+    horas: Mapped[int]
+    situacao: Mapped[str] = mapped_column(default='pendente')

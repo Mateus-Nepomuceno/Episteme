@@ -4,7 +4,13 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from academico.routers import cursos, disciplinas, matriculas, situacao
+from academico.routers import (
+    alunos_me,
+    cursos,
+    disciplinas,
+    matriculas,
+    situacao,
+)
 from academico.routers.periodos_matricula import (
     router as periodos_matricula_router,
 )
@@ -60,6 +66,7 @@ app.include_router(cursos.router)
 app.include_router(disciplinas.router)
 app.include_router(matriculas.router)
 app.include_router(situacao.router)
+app.include_router(alunos_me.router)
 app.include_router(periodos_matricula_router)
 
 
