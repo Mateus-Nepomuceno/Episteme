@@ -12,6 +12,7 @@ from academico.models import AtividadeComplementar
 from academico.schemas import (
     CompromissoAluno,
     CompromissosAluno,
+    HistoricoAluno,
     NotaRecenteAluno,
     NotasRecentesAluno,
     PendenciaAluno,
@@ -37,6 +38,7 @@ DIAS_DA_SEMANA = {
     'Sexta': 4,
 }
 SITUACOES_PENDENTES = ('pendente', 'vencida')
+NOTA_MINIMA_APROVACAO = 7
 
 
 def _aluno_e_turmas(current_user: CurrentUser):
@@ -228,3 +230,38 @@ def read_proximas_aulas(
 
     aulas.sort(key=lambda a: a.data)
     return {'aulas': aulas[:limite]}
+
+
+@router.get('/historico', response_model=HistoricoAluno)
+def read_historico(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    _, turmas = _aluno_e_turmas(current_user)
+
+    disciplinas = []
+    for turma in turmas:
+        if turma.get('encerrada_em') is None:
+            continue
+
+        desempenho = consultar_turma(
+            f'/alunos/me/turmas/{turma["id"]}/desempenho', current_user.token
+        )
+        media = desempenho['media']
+        situacao = (
+            'aprovado'
+            if media is not None and media >= NOTA_MINIMA_APROVACAO
+            else 'reprovado'
+        )
+        disciplinas.append(
+            {
+                'turma_id': turma['id'],
+                'disciplina': turma['materia'],
+                'periodo_letivo': turma.get('periodo_letivo'),
+                'nota_final': media,
+                'frequencia_final': desempenho['frequencia'],
+                'situacao': situacao,
+            }
+        )
+
+    disciplinas.sort(key=lambda d: d['periodo_letivo'] or '')
+    return {'disciplinas': disciplinas}
