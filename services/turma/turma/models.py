@@ -102,6 +102,12 @@ class TurmaAluno:
     aluno_id: Mapped[UUID] = mapped_column(
         ForeignKey("alunos.id"), primary_key=True
     )
+    nota_final: Mapped[float | None] = mapped_column(default=None)
+    frequencia_final: Mapped[int | None] = mapped_column(default=None)
+    situacao: Mapped[str | None] = mapped_column(default=None)
+    trancada_em: Mapped[datetime | None] = mapped_column(
+        DateTime, default=None
+    )
 
 
 class DiaSemana(enum.Enum):
@@ -159,6 +165,8 @@ class Material:
     tipo: Mapped[str]
     ordem: Mapped[int]
     descricao: Mapped[str | None] = mapped_column(default=None)
+    arquivo_nome: Mapped[str | None] = mapped_column(default=None)
+    arquivo_caminho: Mapped[str | None] = mapped_column(default=None)
 
 
 @mapped_as_dataclass(table_registry)
