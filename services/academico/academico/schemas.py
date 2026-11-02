@@ -290,3 +290,16 @@ class ProximaAulaAluno(BaseModel):
 
 class ProximasAulasAluno(BaseModel):
     aulas: list[ProximaAulaAluno]
+
+
+class ItemHistoricoAluno(BaseModel):
+    turma_id: UUID
+    disciplina: str
+    periodo_letivo: str | None
+    nota_final: float | None
+    frequencia_final: int | None
+    situacao: str
+
+
+class HistoricoAluno(BaseModel):
+    disciplinas: list[ItemHistoricoAluno]
