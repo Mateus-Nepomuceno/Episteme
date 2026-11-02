@@ -63,11 +63,12 @@ def encerrar_turma(
             vinculo.frequencia_final = calcular_frequencia(
                 session, turma.id, vinculo.aluno_id
             ).percentual
-            vinculo.situacao = (
-                'aprovado'
-                if media is not None and media >= NOTA_MINIMA
-                else 'reprovado'
-            )
+            if vinculo.trancada_em is not None:
+                vinculo.situacao = 'trancado'
+            elif media is not None and media >= NOTA_MINIMA:
+                vinculo.situacao = 'aprovado'
+            else:
+                vinculo.situacao = 'reprovado'
         session.commit()
         session.refresh(turma)
 

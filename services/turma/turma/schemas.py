@@ -385,3 +385,8 @@ class AvisoCreate(BaseModel):
 class EncerramentoTurma(BaseModel):
     id: UUID
     encerrada_em: datetime
+
+
+class TrancamentoTurma(BaseModel):
+    turma_id: UUID
+    trancada_em: datetime

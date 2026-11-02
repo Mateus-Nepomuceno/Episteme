@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(init=False)
     ACADEMICO_API_URL: str | None = None
     CORS_ORIGINS: str = 'http://localhost:5173'
+    DIRETORIO_ARMAZENAMENTO: str = 'armazenamento'
 
     @property
     def origens_cors(self) -> list[str]:
