@@ -200,6 +200,9 @@ class TurmaMatriculadaResponse(BaseModel):
     media: float | None = None
     frequencia: int | None = None
     progresso: int | None = None
+    nota_final: float | None = None
+    frequencia_final: int | None = None
+    situacao: str | None = None
 
 
 class DisciplinaMatriculadaResponse(DisciplinaPublic):

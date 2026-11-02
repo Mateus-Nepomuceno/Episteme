@@ -38,7 +38,6 @@ DIAS_DA_SEMANA = {
     'Sexta': 4,
 }
 SITUACOES_PENDENTES = ('pendente', 'vencida')
-NOTA_MINIMA_APROVACAO = 7
 
 
 def _aluno_e_turmas(current_user: CurrentUser):
@@ -246,20 +245,14 @@ def read_historico(
         desempenho = consultar_turma(
             f'/alunos/me/turmas/{turma["id"]}/desempenho', current_user.token
         )
-        media = desempenho['media']
-        situacao = (
-            'aprovado'
-            if media is not None and media >= NOTA_MINIMA_APROVACAO
-            else 'reprovado'
-        )
         disciplinas.append(
             {
                 'turma_id': turma['id'],
                 'disciplina': turma['materia'],
                 'periodo_letivo': turma.get('periodo_letivo'),
-                'nota_final': media,
-                'frequencia_final': desempenho['frequencia'],
-                'situacao': situacao,
+                'nota_final': desempenho['nota_final'],
+                'frequencia_final': desempenho['frequencia_final'],
+                'situacao': desempenho['situacao'],
             }
         )
 

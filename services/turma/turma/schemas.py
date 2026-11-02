@@ -233,6 +233,7 @@ class ModuloPublic(BaseModel):
     titulo: str
     ordem: int
     publicado: bool
+    status: str | None = None
     materiais: list[MaterialPublic]
 
 
@@ -369,6 +370,9 @@ class DesempenhoAluno(BaseModel):
     media: float | None
     frequencia: int | None
     progresso: int | None
+    nota_final: float | None = None
+    frequencia_final: int | None = None
+    situacao: str | None = None
 
 
 class AvisoCreate(BaseModel):
@@ -381,3 +385,8 @@ class AvisoCreate(BaseModel):
 class EncerramentoTurma(BaseModel):
     id: UUID
     encerrada_em: datetime
+
+
+class TrancamentoTurma(BaseModel):
+    turma_id: UUID
+    trancada_em: datetime

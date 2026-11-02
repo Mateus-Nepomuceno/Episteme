@@ -45,8 +45,18 @@ DESEMPENHOS = {
         'media': MEDIA_APROVADO,
         'frequencia': FREQUENCIA_APROVADO,
         'progresso': 100,
+        'nota_final': MEDIA_APROVADO,
+        'frequencia_final': FREQUENCIA_APROVADO,
+        'situacao': 'aprovado',
     },
-    TURMA_REPROVADA: {'media': 5.0, 'frequencia': 70, 'progresso': 100},
+    TURMA_REPROVADA: {
+        'media': 5.0,
+        'frequencia': 70,
+        'progresso': 100,
+        'nota_final': 5.0,
+        'frequencia_final': 70,
+        'situacao': 'reprovado',
+    },
 }
 
 

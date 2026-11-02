@@ -12,8 +12,10 @@ from turma.routers import (
     encerramento,
     frequencia,
     horarios,
+    materiais,
     modulos,
     professores,
+    trancamento,
     turmas,
 )
 from turma.schemas import Mensagem
@@ -35,6 +37,8 @@ app.include_router(professores.router)
 app.include_router(turmas.router)
 app.include_router(horarios.router)
 app.include_router(modulos.router)
+app.include_router(materiais.router)
+app.include_router(trancamento.router)
 app.include_router(atividades.router)
 app.include_router(avaliacoes.router)
 app.include_router(frequencia.router)
