@@ -7,6 +7,8 @@ from turma.routers import (
     alunos,
     atividades,
     avaliacoes,
+    desempenho,
+    frequencia,
     horarios,
     modulos,
     professores,
@@ -33,6 +35,8 @@ app.include_router(horarios.router)
 app.include_router(modulos.router)
 app.include_router(atividades.router)
 app.include_router(avaliacoes.router)
+app.include_router(frequencia.router)
+app.include_router(desempenho.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Mensagem)

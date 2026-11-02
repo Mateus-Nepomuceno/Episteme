@@ -329,3 +329,33 @@ class NotaAluno(BaseModel):
 
 class NotasAlunoList(BaseModel):
     notas: list[NotaAluno]
+
+
+class PresencaItem(BaseModel):
+    aluno_id: UUID
+    presente: bool
+
+
+class ChamadaCreate(BaseModel):
+    data: date
+    presencas: list[PresencaItem] = Field(default_factory=list)
+
+
+class ChamadaPublic(BaseModel):
+    id: UUID
+    turma_id: UUID
+    data: date
+    presentes: int
+    matriculados: int
+
+
+class FrequenciaAluno(BaseModel):
+    aulas: int
+    presencas: int
+    percentual: int | None
+
+
+class DesempenhoAluno(BaseModel):
+    media: float | None
+    frequencia: int | None
+    progresso: int | None
