@@ -196,6 +196,9 @@ class TurmaMatriculadaResponse(BaseModel):
     periodo_letivo: str | None = None
     professor: ProfessorTurmaResponse | None = None
     horarios: list[HorarioTurmaResponse] = Field(default_factory=list)
+    media: float | None = None
+    frequencia: int | None = None
+    progresso: int | None = None
 
 
 class DisciplinaMatriculadaResponse(DisciplinaPublic):
