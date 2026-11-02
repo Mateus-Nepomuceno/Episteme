@@ -46,6 +46,7 @@ def create_usuario(
         telefone=usuario.telefone,
         senha=get_password_hash(usuario.senha),
         e_admin=False,
+        matricula=usuario.matricula,
     )
 
     session.add(db_usuario)
@@ -105,6 +106,8 @@ def update_usuario(
     db_usuario.email = usuario.email
     db_usuario.cpf = usuario.cpf
     db_usuario.telefone = usuario.telefone
+    if current_user.e_admin and usuario.matricula is not None:
+        db_usuario.matricula = usuario.matricula
     db_usuario.senha = get_password_hash(usuario.senha)
     db_usuario.e_admin = usuario.e_admin
 

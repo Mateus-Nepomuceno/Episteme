@@ -85,6 +85,7 @@ class UsuarioSchema(BaseModel):
 
 class UsuarioCreate(UsuarioSchema):
     senha: str = Field(min_length=SENHA_MINIMA)
+    matricula: str | None = Field(default=None, min_length=1)
 
 
 class UsuarioPublic(BaseModel):

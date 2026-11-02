@@ -104,7 +104,7 @@ def test_update_usuario_forbidden(client, user, admin_token):
 
 
 def test_update_usuario_forbidden_real(client, user):
-    response_create = client.post(
+    client.post(
         '/usuarios/',
         json={
             'nome': 'malicioso',
@@ -113,12 +113,12 @@ def test_update_usuario_forbidden_real(client, user):
             'telefone': '(11) 95555-5555',
             'senha': 'senha_limpa',
             'e_admin': False,
+            'matricula': '2023000002',
         },
     )
-    mallory = response_create.json()
     mallory_token = client.post(
         '/auth/token',
-        data={'username': mallory['email'], 'password': 'senha_limpa'},
+        data={'username': '2023000002', 'password': 'senha_limpa'},
     ).json()['access_token']
 
     response = client.put(

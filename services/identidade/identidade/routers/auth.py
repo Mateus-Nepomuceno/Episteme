@@ -20,19 +20,19 @@ def login_for_access_token(
     session: Annotated[Session, Depends(get_session)],
 ):
     usuario = session.scalar(
-        select(Usuario).where(Usuario.email == form_data.username)
+        select(Usuario).where(Usuario.matricula == form_data.username)
     )
 
     if not usuario:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Senha ou email incorretos',
+            detail='Matrícula ou senha incorretas',
         )
 
     if not verify_password(form_data.password, usuario.senha):
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Senha ou email incorretos',
+            detail='Matrícula ou senha incorretas',
         )
 
     access_token = create_access_token(
