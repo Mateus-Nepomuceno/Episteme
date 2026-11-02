@@ -273,3 +273,59 @@ class EntregaPublic(BaseModel):
     situacao: str
     entregue_em: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+TipoAvaliacao = Literal['prova', 'trabalho', 'atividade', 'outra']
+
+
+class AvaliacaoCreate(BaseModel):
+    nome: str = Field(min_length=1)
+    tipo: TipoAvaliacao
+    data: date
+    peso: float = Field(gt=0, le=100)
+
+
+class AvaliacaoUpdate(BaseModel):
+    nome: str | None = Field(default=None, min_length=1)
+    tipo: TipoAvaliacao | None = None
+    data: date | None = None
+    peso: float | None = Field(default=None, gt=0, le=100)
+
+
+class AvaliacaoPublic(BaseModel):
+    id: UUID
+    nome: str
+    tipo: str
+    data: date
+    peso: float
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AvaliacaoList(BaseModel):
+    avaliacoes: list[AvaliacaoPublic]
+    soma_pesos: float
+
+
+class NotaCreate(BaseModel):
+    valor: float = Field(ge=0, le=10)
+
+
+class NotaPublic(BaseModel):
+    avaliacao_id: UUID
+    aluno_id: UUID
+    valor: float
+    lancada_em: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NotaAluno(BaseModel):
+    avaliacao_id: UUID
+    nome: str
+    tipo: str
+    data: date
+    peso: float
+    valor: float | None
+
+
+class NotasAlunoList(BaseModel):
+    notas: list[NotaAluno]

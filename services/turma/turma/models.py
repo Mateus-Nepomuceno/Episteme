@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime, time
+from datetime import date, datetime, time
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, DateTime, ForeignKey, Time
@@ -203,5 +203,35 @@ class Entrega:
         ForeignKey('alunos.id'), primary_key=True
     )
     entregue_em: Mapped[datetime] = mapped_column(
+        DateTime, init=False, default=datetime.now
+    )
+
+
+@mapped_as_dataclass(table_registry)
+class Avaliacao:
+    __tablename__ = 'avaliacoes'
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    turma_id: Mapped[UUID] = mapped_column(ForeignKey('turmas.id'))
+    nome: Mapped[str]
+    tipo: Mapped[str]
+    data: Mapped[date]
+    peso: Mapped[float]
+
+
+@mapped_as_dataclass(table_registry)
+class Nota:
+    __tablename__ = 'notas'
+
+    avaliacao_id: Mapped[UUID] = mapped_column(
+        ForeignKey('avaliacoes.id'), primary_key=True
+    )
+    aluno_id: Mapped[UUID] = mapped_column(
+        ForeignKey('alunos.id'), primary_key=True
+    )
+    valor: Mapped[float]
+    lancada_em: Mapped[datetime] = mapped_column(
         DateTime, init=False, default=datetime.now
     )
