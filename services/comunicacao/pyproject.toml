@@ -1,0 +1,9 @@
+[project]
+name = 'comunicacao'
+version = '0.1.0'
+description = 'Comunicados institucionais'
+requires-python = '>=3.12,<4.0'
+dependencies = [
+    'fastapi[standard] (>=0.141.1,<0.142.0)',
+    "pydantic-settings (>=2.15.0,<3.0.0)",
+]
