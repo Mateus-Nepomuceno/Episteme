@@ -136,6 +136,7 @@ class TurmaAlunoPublic(BaseModel):
     capacidade: int | None
     professor: ProfessorTurmaPublic | None
     horarios: list[HorarioTurmaPublic]
+    encerrada_em: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -366,3 +367,8 @@ class AvisoCreate(BaseModel):
     data: date
     titulo: str = Field(min_length=1)
     mensagem: str = Field(min_length=1)
+
+
+class EncerramentoTurma(BaseModel):
+    id: UUID
+    encerrada_em: datetime
