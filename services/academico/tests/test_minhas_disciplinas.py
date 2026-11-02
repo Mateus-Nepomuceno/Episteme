@@ -126,6 +126,7 @@ def test_aluno_recebe_disciplinas_com_turmas_relacionadas_pelo_codigo(
     assert turma['professor'] == {
         'id': PROFESSOR_ID,
         'matricula_id': 'P000001',
+        'nome': None,
     }
     assert turma['horarios'] == [
         {
