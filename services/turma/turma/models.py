@@ -170,3 +170,38 @@ class AcessoMaterial:
     aberto_em: Mapped[datetime] = mapped_column(
         DateTime, init=False, default=datetime.now
     )
+
+
+@mapped_as_dataclass(table_registry)
+class Atividade:
+    __tablename__ = 'atividades'
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4, init=False
+    )
+    turma_id: Mapped[UUID] = mapped_column(ForeignKey('turmas.id'))
+    titulo: Mapped[str]
+    tipo: Mapped[str]
+    categoria: Mapped[str]
+    prazo: Mapped[datetime] = mapped_column(DateTime)
+    pontos: Mapped[float | None] = mapped_column(default=None)
+    descricao: Mapped[str | None] = mapped_column(default=None)
+    publicada: Mapped[bool] = mapped_column(default=True)
+    modulo_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey('modulos.id'), default=None
+    )
+
+
+@mapped_as_dataclass(table_registry)
+class Entrega:
+    __tablename__ = 'entregas'
+
+    atividade_id: Mapped[UUID] = mapped_column(
+        ForeignKey('atividades.id'), primary_key=True
+    )
+    aluno_id: Mapped[UUID] = mapped_column(
+        ForeignKey('alunos.id'), primary_key=True
+    )
+    entregue_em: Mapped[datetime] = mapped_column(
+        DateTime, init=False, default=datetime.now
+    )

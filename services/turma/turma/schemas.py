@@ -234,3 +234,42 @@ class AcessoMaterialPublic(BaseModel):
     material_id: UUID
     aberto_em: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+TipoAtividade = Literal['leitura', 'exercicio', 'pratica', 'forum', 'questionario']
+
+
+class AtividadeCreate(BaseModel):
+    titulo: str = Field(min_length=1)
+    tipo: TipoAtividade
+    categoria: str = Field(min_length=1)
+    pontos: float | None = Field(default=None, ge=0)
+    prazo: datetime
+    descricao: str | None = None
+    publicada: bool = True
+    modulo_id: UUID | None = None
+
+
+class AtividadePublic(BaseModel):
+    id: UUID
+    titulo: str
+    tipo: str
+    categoria: str
+    pontos: float | None
+    prazo: datetime
+    descricao: str | None
+    publicada: bool
+    modulo_id: UUID | None
+    situacao: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AtividadeList(BaseModel):
+    atividades: list[AtividadePublic]
+
+
+class EntregaPublic(BaseModel):
+    atividade_id: UUID
+    situacao: str
+    entregue_em: datetime
+    model_config = ConfigDict(from_attributes=True)
