@@ -49,6 +49,7 @@ def create_professor(
         usuario_id=professor.usuario_id,
         matricula_id=professor.matricula_id,
         ativo=professor.ativo,
+        nome=professor.nome,
     )
 
     session.add(db_professor)

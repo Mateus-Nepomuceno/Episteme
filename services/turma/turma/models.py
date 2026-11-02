@@ -50,6 +50,7 @@ class Professor:
     )
 
     ativo: Mapped[bool] = mapped_column(default=True)
+    nome: Mapped[str | None] = mapped_column(default=None)
 
 
 @mapped_as_dataclass(table_registry)
