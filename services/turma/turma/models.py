@@ -86,6 +86,9 @@ class Turma:
 
     documentos: Mapped[list[str]] = mapped_column(JSON, default=list)
     avisos: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    encerrada_em: Mapped[datetime | None] = mapped_column(
+        DateTime, default=None
+    )
 
 
 @mapped_as_dataclass(table_registry)

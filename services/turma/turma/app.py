@@ -9,6 +9,7 @@ from turma.routers import (
     avaliacoes,
     avisos,
     desempenho,
+    encerramento,
     frequencia,
     horarios,
     modulos,
@@ -39,6 +40,7 @@ app.include_router(avaliacoes.router)
 app.include_router(frequencia.router)
 app.include_router(desempenho.router)
 app.include_router(avisos.router)
+app.include_router(encerramento.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Mensagem)
