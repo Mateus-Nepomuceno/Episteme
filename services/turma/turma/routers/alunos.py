@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,11 +12,14 @@ from turma.academico_client import (
     consultar_curso,
 )
 from turma.database import get_session
-from turma.models import Aluno
+from turma.models import Aluno, Turma, TurmaAluno
 from turma.schemas import (
     AlunoCreate,
     AlunoList,
     AlunoPublic,
+    AvisoAluno,
+    AvisosAlunoList,
+    AvisoTurma,
     FiltroPaginacao,
     Mensagem,
 )
@@ -112,6 +115,39 @@ def read_aluno(
     exigir_dono_ou_admin(current_user, aluno.usuario_id)
 
     return aluno
+
+
+@router.get('/me/avisos', response_model=AvisosAlunoList)
+def read_avisos_aluno(
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    limite: Annotated[int, Query(ge=1, le=100)] = 10,
+):
+    aluno = session.scalar(
+        select(Aluno).where(Aluno.usuario_id == current_user.id)
+    )
+
+    if aluno is None:
+        return {'avisos': []}
+
+    turmas = session.scalars(
+        select(Turma)
+        .join(TurmaAluno, TurmaAluno.turma_id == Turma.id)
+        .where(TurmaAluno.aluno_id == aluno.id)
+    ).all()
+
+    avisos = [
+        AvisoAluno(
+            **AvisoTurma.model_validate(aviso).model_dump(),
+            turma_id=turma.id,
+            disciplina=turma.materia,
+        )
+        for turma in turmas
+        for aviso in turma.avisos
+    ]
+    avisos.sort(key=lambda aviso: aviso.data, reverse=True)
+
+    return {'avisos': avisos[:limite]}
 
 
 @router.get('/usuario_id/{aluno_usuario_id}', response_model=AlunoPublic)
