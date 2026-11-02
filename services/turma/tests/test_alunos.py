@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from unittest.mock import patch
 from uuid import uuid4
 
 from turma.app import app
@@ -81,10 +82,10 @@ def test_update_aluno(client, session):
     new_uid = uuid4()
     response = client.put(
         f'/alunos/{aluno.id}',
-        json={'usuario_id': str(new_uid), 'matricula_id': '1234', 'curso_id': CURSO_B, 'ativo': False},
+        json={'usuario_id': str(new_uid), 'matricula_id': '123', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.OK
-    assert response.json()['matricula_id'] == '1234'
+    assert response.json()['matricula_id'] == '123'
     assert response.json()['curso_id'] == CURSO_B
     app.dependency_overrides.clear()
 
@@ -129,7 +130,7 @@ def test_update_aluno_conflict(client, session):
 
     response = client.put(
         f'/alunos/{aluno1.id}',
-        json={'usuario_id': str(uid2), 'matricula_id': '124', 'curso_id': CURSO_B, 'ativo': False},
+        json={'usuario_id': str(uid2), 'matricula_id': '123', 'curso_id': CURSO_B, 'ativo': False},
     )
     assert response.status_code == HTTPStatus.CONFLICT
     app.dependency_overrides.clear()
@@ -167,3 +168,38 @@ def test_delete_aluno_forbidden(client, session):
     response = client.delete(f'/alunos/{aluno.id}')
     assert response.status_code == HTTPStatus.FORBIDDEN
     app.dependency_overrides.clear()
+
+
+def test_aluno_encontrado_pela_matricula_no_identidade(client, session):
+    aluno = Aluno(
+        usuario_id=uuid4(),
+        matricula_id='SEM-COPIA',
+        curso_id='11111111-1111-1111-1111-111111111111',
+        ativo=True,
+    )
+    session.add(aluno)
+    session.commit()
+    session.refresh(aluno)
+
+    with patch(
+        'turma.routers.alunos.buscar_usuario_por_matricula',
+        return_value={'id': str(aluno.usuario_id)},
+    ):
+        resposta = client.get('/alunos/matricula_id/OUTRA-MATRICULA')
+
+    assert resposta.status_code == HTTPStatus.OK
+    assert resposta.json()['id'] == str(aluno.id)
+
+
+def test_matricula_do_aluno_nao_pode_ser_alterada(client, session):
+    uid = uuid4()
+    aluno = Aluno(usuario_id=uid, matricula_id='777', curso_id=CURSO_A, ativo=True)
+    session.add(aluno)
+    session.commit()
+
+    response = client.put(
+        f'/alunos/{aluno.id}',
+        json={'usuario_id': str(uid), 'matricula_id': '778', 'curso_id': CURSO_A, 'ativo': True},
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

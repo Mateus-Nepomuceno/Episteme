@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     EmailStr,
     Field,
     field_validator,
@@ -98,3 +99,14 @@ class UsuarioPublic(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class UsuarioInterno(BaseModel):
+    id: UUID
+    nome: str
+    matricula: str | None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MatriculaInterna(BaseModel):
+    matricula: str = Field(min_length=1)

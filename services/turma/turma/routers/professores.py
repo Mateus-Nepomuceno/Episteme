@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from turma.database import get_session
+from turma.identidade_client import definir_matricula
 from turma.models import Professor
 from turma.schemas import (
     FiltroPaginacao,
@@ -43,6 +44,12 @@ def create_professor(
     if db_professor:
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT, detail='Professor já cadastrado'
+        )
+
+    if not definir_matricula(professor.usuario_id, professor.matricula_id):
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Não foi possível vincular a matrícula ao usuário',
         )
 
     db_professor = Professor(
@@ -101,9 +108,14 @@ def update_professor(
             detail='Professor não encontrado'
         )
 
+    if professor.matricula_id != db_professor.matricula_id:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='A matrícula não pode ser alterada',
+        )
+
     try:
         db_professor.usuario_id = professor.usuario_id
-        db_professor.matricula_id = professor.matricula_id
         db_professor.ativo = professor.ativo
         session.commit()
     except IntegrityError:

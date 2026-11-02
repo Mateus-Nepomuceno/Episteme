@@ -38,6 +38,7 @@ from turma.security import (
     get_current_user,
     get_usuario_opcional,
 )
+from turma.usuarios import preencher_nome_professor
 
 router = APIRouter(prefix='/turmas', tags=['turmas'])
 
@@ -325,6 +326,9 @@ def read_turmas_aluno(
         .order_by(Turma.nome, Turma.id)
     ).all()
 
+    for turma in turmas:
+        preencher_nome_professor(session, turma)
+
     return {'turmas': turmas}
 
 
@@ -339,6 +343,7 @@ def read_turma(
     if not turma:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Turma não encontrada')
 
+    preencher_nome_professor(session, turma)
     return _turma_visivel(turma, current_user)
 
 
