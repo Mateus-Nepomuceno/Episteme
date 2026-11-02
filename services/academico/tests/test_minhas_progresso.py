@@ -67,3 +67,45 @@ def test_turma_matriculada_traz_media_frequencia_e_progresso(client, session):
         f'/alunos/me/turmas/{TURMA_ID}/desempenho', 'token-aluno'
     )
     app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_minhas_disciplinas_traz_nome_do_professor(client, session):
+    _autenticar()
+    session.add(
+        Disciplina(
+            codigo=CODIGO,
+            nome='Banco de Dados II',
+            carga_horaria=60,
+            tipo='obrigatória',
+            departamento='DCC',
+        )
+    )
+    session.commit()
+    turma = {
+        'id': TURMA_ID,
+        'nome': 'Turma BD',
+        'codigo': CODIGO,
+        'periodo_letivo': '2026.2',
+        'professor': {'id': str(uuid4()), 'matricula_id': 'P1', 'nome': 'Rafael Oliveira'},
+        'horarios': [],
+    }
+
+    with (
+        patch(
+            'academico.routers.matriculas.buscar_aluno_por_usuario',
+            return_value={'id': ALUNO_ID},
+        ),
+        patch(
+            'academico.routers.matriculas.listar_turmas_do_aluno',
+            return_value=[turma],
+        ),
+        patch(
+            'academico.routers.matriculas.consultar_turma',
+            return_value={'media': None, 'frequencia': None, 'progresso': None},
+        ),
+    ):
+        resposta = client.get('/matricula/minhas-disciplinas')
+
+    app.dependency_overrides.pop(get_current_user, None)
+    professor = resposta.json()['disciplinas'][0]['turmas'][0]['professor']
+    assert professor['nome'] == 'Rafael Oliveira'

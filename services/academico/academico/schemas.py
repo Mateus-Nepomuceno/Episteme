@@ -187,6 +187,7 @@ class HorarioTurmaResponse(BaseModel):
 class ProfessorTurmaResponse(BaseModel):
     id: UUID
     matricula_id: str
+    nome: str | None = None
 
 
 class TurmaMatriculadaResponse(BaseModel):
