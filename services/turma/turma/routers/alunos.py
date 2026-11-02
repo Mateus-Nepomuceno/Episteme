@@ -4,7 +4,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from turma.academico_client import (
@@ -12,10 +11,6 @@ from turma.academico_client import (
     consultar_curso,
 )
 from turma.database import get_session
-from turma.identidade_client import (
-    buscar_usuario_por_matricula,
-    definir_matricula,
-)
 from turma.models import Aluno, Turma, TurmaAluno
 from turma.schemas import (
     AlunoCreate,
@@ -33,8 +28,21 @@ from turma.security import (
     exigir_dono_ou_admin,
     get_current_user,
 )
+from turma.usuarios import matricula_do_usuario, usuario_id_por_matricula
 
 router = APIRouter(prefix='/alunos', tags=['alunos'])
+
+
+def _publico(
+    session: Session, aluno: Aluno, matricula: str | None = None
+) -> AlunoPublic:
+    return AlunoPublic(
+        id=aluno.id,
+        usuario_id=aluno.usuario_id,
+        matricula_id=matricula or matricula_do_usuario(session, aluno.usuario_id),
+        curso_id=aluno.curso_id,
+        ativo=aluno.ativo,
+    )
 
 
 def _exigir_curso_valido(curso_id: str) -> None:
@@ -65,13 +73,14 @@ def create_aluno(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-
-    db_aluno = session.scalar(
-        select(Aluno).where(
-            (Aluno.matricula_id == aluno.matricula_id)
-            | (Aluno.usuario_id == aluno.usuario_id)
+    usuario_id = usuario_id_por_matricula(aluno.matricula_id)
+    if usuario_id is None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Matrícula não encontrada no serviço de identidade',
         )
-    )
+
+    db_aluno = session.scalar(select(Aluno).where(Aluno.usuario_id == usuario_id))
 
     if db_aluno:
         raise HTTPException(
@@ -80,15 +89,8 @@ def create_aluno(
 
     _exigir_curso_valido(aluno.curso_id)
 
-    if not definir_matricula(aluno.usuario_id, aluno.matricula_id):
-        raise HTTPException(
-            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail='Não foi possível vincular a matrícula ao usuário',
-        )
-
     db_aluno = Aluno(
-        usuario_id=aluno.usuario_id,
-        matricula_id=aluno.matricula_id,
+        usuario_id=usuario_id,
         curso_id=aluno.curso_id,
         ativo=aluno.ativo,
     )
@@ -97,7 +99,7 @@ def create_aluno(
     session.commit()
     session.refresh(db_aluno)
 
-    return db_aluno
+    return _publico(session, db_aluno, aluno.matricula_id)
 
 
 @router.get('/', response_model=AlunoList)
@@ -106,9 +108,8 @@ def read_alunos(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-
     alunos = session.scalars(select(Aluno).offset(filter.offset).limit(filter.limit)).all()
-    return {'alunos': alunos}
+    return {'alunos': [_publico(session, a) for a in alunos]}
 
 
 @router.get('/{aluno_id}', response_model=AlunoPublic)
@@ -124,7 +125,7 @@ def read_aluno(
 
     exigir_dono_ou_admin(current_user, aluno.usuario_id)
 
-    return aluno
+    return _publico(session, aluno)
 
 
 @router.get('/me/avisos', response_model=AvisosAlunoList)
@@ -173,7 +174,7 @@ def read_aluno_usuario_id(
     if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
 
-    return aluno
+    return _publico(session, aluno)
 
 
 @router.get('/matricula_id/{aluno_matricula_id}', response_model=AlunoPublic)
@@ -182,21 +183,17 @@ def read_aluno_matricula_id(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ):
-    aluno = session.scalar(select(Aluno).where(Aluno.matricula_id == aluno_matricula_id))
-
-    if not aluno:
-        usuario = buscar_usuario_por_matricula(aluno_matricula_id)
-        if usuario is not None:
-            aluno = session.scalar(
-                select(Aluno).where(Aluno.usuario_id == UUID(usuario['id']))
-            )
+    usuario_id = usuario_id_por_matricula(aluno_matricula_id)
+    aluno = None
+    if usuario_id is not None:
+        aluno = session.scalar(select(Aluno).where(Aluno.usuario_id == usuario_id))
 
     if not aluno:
         raise HTTPException(status_code=404, detail='Aluno não encontrado')
 
     exigir_dono_ou_admin(current_user, aluno.usuario_id)
 
-    return aluno
+    return _publico(session, aluno)
 
 
 @router.put('/{aluno_id}', response_model=AlunoPublic)
@@ -216,25 +213,17 @@ def update_aluno(
 
     _exigir_curso_valido(aluno.curso_id)
 
-    if aluno.matricula_id != db_aluno.matricula_id:
+    if usuario_id_por_matricula(aluno.matricula_id) != db_aluno.usuario_id:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='A matrícula não pode ser alterada',
         )
 
-    try:
-        db_aluno.usuario_id = aluno.usuario_id
-        db_aluno.curso_id = aluno.curso_id
-        db_aluno.ativo = aluno.ativo
-        session.commit()
-    except IntegrityError:
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail='Matrícula ou usuário já cadastrados'
-        )
-    else:
-        session.refresh(db_aluno)
-        return db_aluno
+    db_aluno.curso_id = aluno.curso_id
+    db_aluno.ativo = aluno.ativo
+    session.commit()
+    session.refresh(db_aluno)
+    return _publico(session, db_aluno)
 
 
 @router.delete('/{aluno_id}', response_model=Mensagem)

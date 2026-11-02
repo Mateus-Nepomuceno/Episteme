@@ -4,11 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from turma.database import get_session
-from turma.identidade_client import definir_matricula
 from turma.models import Professor
 from turma.schemas import (
     FiltroPaginacao,
@@ -23,8 +21,21 @@ from turma.security import (
     exigir_dono_ou_admin,
     get_current_user,
 )
+from turma.usuarios import matricula_do_usuario, usuario_id_por_matricula
 
 router = APIRouter(prefix='/professores', tags=['professores'])
+
+
+def _publico(
+    session: Session, professor: Professor, matricula: str | None = None
+) -> ProfessorPublic:
+    return ProfessorPublic(
+        id=professor.id,
+        usuario_id=professor.usuario_id,
+        matricula_id=matricula or matricula_do_usuario(session, professor.usuario_id),
+        ativo=professor.ativo,
+        nome=professor.nome,
+    )
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=ProfessorPublic)
@@ -33,28 +44,22 @@ def create_professor(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[CurrentUser, Depends(exigir_admin)],
 ):
-
-    db_professor = session.scalar(
-        select(Professor).where(
-            (Professor.matricula_id == professor.matricula_id)
-            | (Professor.usuario_id == professor.usuario_id)
+    usuario_id = usuario_id_por_matricula(professor.matricula_id)
+    if usuario_id is None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Matrícula não encontrada no serviço de identidade',
         )
-    )
+
+    db_professor = session.scalar(select(Professor).where(Professor.usuario_id == usuario_id))
 
     if db_professor:
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT, detail='Professor já cadastrado'
         )
 
-    if not definir_matricula(professor.usuario_id, professor.matricula_id):
-        raise HTTPException(
-            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail='Não foi possível vincular a matrícula ao usuário',
-        )
-
     db_professor = Professor(
-        usuario_id=professor.usuario_id,
-        matricula_id=professor.matricula_id,
+        usuario_id=usuario_id,
         ativo=professor.ativo,
         nome=professor.nome,
     )
@@ -63,7 +68,7 @@ def create_professor(
     session.commit()
     session.refresh(db_professor)
 
-    return db_professor
+    return _publico(session, db_professor, professor.matricula_id)
 
 
 @router.get('/', response_model=ProfessorList)
@@ -74,7 +79,7 @@ def read_professores(
 ):
 
     professores = session.scalars(select(Professor).offset(filter.offset).limit(filter.limit)).all()
-    return {'professores': professores}
+    return {'professores': [_publico(session, p) for p in professores]}
 
 
 @router.get('/{professor_id}', response_model=ProfessorPublic)
@@ -90,7 +95,7 @@ def read_professor(
 
     exigir_dono_ou_admin(current_user, professor.usuario_id)
 
-    return professor
+    return _publico(session, professor)
 
 
 @router.put('/{professor_id}', response_model=ProfessorPublic)
@@ -108,24 +113,16 @@ def update_professor(
             detail='Professor não encontrado'
         )
 
-    if professor.matricula_id != db_professor.matricula_id:
+    if usuario_id_por_matricula(professor.matricula_id) != db_professor.usuario_id:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='A matrícula não pode ser alterada',
         )
 
-    try:
-        db_professor.usuario_id = professor.usuario_id
-        db_professor.ativo = professor.ativo
-        session.commit()
-    except IntegrityError:
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail='Matrícula ou usuário já cadastrados'
-        )
-    else:
-        session.refresh(db_professor)
-        return db_professor
+    db_professor.ativo = professor.ativo
+    session.commit()
+    session.refresh(db_professor)
+    return _publico(session, db_professor)
 
 
 @router.delete('/{professor_id}', response_model=Mensagem)

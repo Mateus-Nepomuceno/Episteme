@@ -2,6 +2,9 @@ from datetime import time
 from http import HTTPStatus
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from tests.conftest import usuario_da
 from turma.models import Aluno, DiaSemana, Horario, Professor, Turma
 
 PERIODO = '2026.2'
@@ -10,9 +13,7 @@ VAGAS_COM_UMA_MATRICULA_ATIVA = 2
 
 
 def criar_professor(session, matricula='P001'):
-    professor = Professor(
-        usuario_id=uuid4(), matricula_id=matricula, ativo=True
-    )
+    professor = Professor(usuario_id=usuario_da(matricula), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -22,7 +23,6 @@ def criar_professor(session, matricula='P001'):
 def criar_aluno(session, ativo=True):
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id=f'A{uuid4().hex[:6]}',
         curso_id=str(uuid4()),
         ativo=ativo,
     )
@@ -76,7 +76,7 @@ def criar_turma(session, curso_id, **campos):
 
 
 def _professor_padrao(session):
-    professor = session.query(Professor).filter_by(matricula_id='PADRAO').first()
+    professor = session.get(Professor, session.scalar(select(Professor.id).where(Professor.usuario_id == usuario_da('PADRAO'))) or uuid4())
     if professor is None:
         professor = criar_professor(session, matricula='PADRAO')
     return professor.id
@@ -198,7 +198,7 @@ def test_ofertas_nao_expoe_dados_de_alunos(client, session):
     assert 'alunos' not in item
     texto = resposta.text
     assert str(aluno.usuario_id) not in texto
-    assert aluno.matricula_id not in texto
+    assert str(aluno.usuario_id) not in texto
 
 
 def test_ofertas_filtra_por_disciplina_sem_diferenciar_maiusculas(

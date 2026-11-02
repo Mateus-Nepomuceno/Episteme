@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from uuid import uuid4
 
+from tests.conftest import usuario_da
 from turma.app import app
 from turma.models import Professor
 from turma.security import CurrentUser, get_current_user
@@ -18,7 +19,7 @@ def test_create_professor(client):
 
 def test_create_professor_conflict(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 
@@ -36,8 +37,8 @@ def test_read_professores(client):
 
 
 def test_read_professor(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 
@@ -53,7 +54,7 @@ def test_read_professor_not_found(client):
 
 def test_update_professor(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 
@@ -81,8 +82,8 @@ def test_update_professor_not_found(client):
 
 
 def test_update_professor_forbidden(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 
@@ -99,8 +100,8 @@ def test_update_professor_forbidden(client, session):
 def test_update_professor_conflict(client, session):
     uid1 = uuid4()
     uid2 = uuid4()
-    professor1 = Professor(usuario_id=uid1, matricula_id='123', ativo=True)
-    professor2 = Professor(usuario_id=uid2, matricula_id='124', ativo=True)
+    professor1 = Professor(usuario_id=usuario_da('123'), ativo=True)
+    professor2 = Professor(usuario_id=usuario_da('124'), ativo=True)
     session.add(professor1)
     session.add(professor2)
     session.commit()
@@ -109,15 +110,15 @@ def test_update_professor_conflict(client, session):
 
     response = client.put(
         f'/professores/{professor1.id}',
-        json={'usuario_id': str(uid2), 'matricula_id': '123', 'ativo': False},
+        json={'usuario_id': str(uid2), 'matricula_id': '124', 'ativo': False},
     )
-    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     app.dependency_overrides.clear()
 
 
 def test_delete_professor(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 
@@ -137,8 +138,8 @@ def test_delete_professor_not_found(client):
 
 
 def test_delete_professor_forbidden(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
 

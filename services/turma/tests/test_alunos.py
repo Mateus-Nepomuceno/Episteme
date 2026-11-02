@@ -2,6 +2,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 from uuid import uuid4
 
+from tests.conftest import usuario_da
 from turma.app import app
 from turma.models import Aluno
 from turma.security import CurrentUser, get_current_user
@@ -12,7 +13,7 @@ CURSO_B = '22222222-2222-2222-2222-222222222222'
 
 def test_create_aluno_conflict(client, session):
     uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -24,8 +25,8 @@ def test_create_aluno_conflict(client, session):
 
 
 def test_read_aluno(client, session):
-    uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    uuid4()
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -40,8 +41,8 @@ def test_read_aluno_not_found(client):
 
 
 def test_read_aluno_usuario_id(client, session):
-    uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    uuid4()
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -56,14 +57,14 @@ def test_read_aluno_usuario_id_not_found(client):
 
 
 def test_read_aluno_matricula_id(client, session):
-    uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    uuid4()
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
-    response = client.get(f'/alunos/matricula_id/{aluno.matricula_id}')
+    response = client.get('/alunos/matricula_id/123')
     assert response.status_code == HTTPStatus.OK
-    assert response.json()['usuario_id'] == str(uid)
+    assert response.json()['usuario_id'] == str(usuario_da('123'))
 
 
 def test_read_aluno_matricula_id_not_found(client):
@@ -73,7 +74,7 @@ def test_read_aluno_matricula_id_not_found(client):
 
 def test_update_aluno(client, session):
     uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -102,8 +103,8 @@ def test_update_aluno_not_found(client):
 
 
 def test_update_aluno_forbidden(client, session):
-    uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    uuid4()
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -120,8 +121,8 @@ def test_update_aluno_forbidden(client, session):
 def test_update_aluno_conflict(client, session):
     uid1 = uuid4()
     uid2 = uuid4()
-    aluno1 = Aluno(usuario_id=uid1, matricula_id='123', curso_id='1', ativo=True)
-    aluno2 = Aluno(usuario_id=uid2, matricula_id='124', curso_id='2', ativo=True)
+    aluno1 = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
+    aluno2 = Aluno(usuario_id=usuario_da('124'), curso_id='2', ativo=True)
     session.add(aluno1)
     session.add(aluno2)
     session.commit()
@@ -130,15 +131,15 @@ def test_update_aluno_conflict(client, session):
 
     response = client.put(
         f'/alunos/{aluno1.id}',
-        json={'usuario_id': str(uid2), 'matricula_id': '123', 'curso_id': CURSO_B, 'ativo': False},
+        json={'usuario_id': str(uid2), 'matricula_id': '124', 'curso_id': CURSO_B, 'ativo': False},
     )
-    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     app.dependency_overrides.clear()
 
 
 def test_delete_aluno(client, session):
     uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -158,8 +159,8 @@ def test_delete_aluno_not_found(client):
 
 
 def test_delete_aluno_forbidden(client, session):
-    uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='123', curso_id='1', ativo=True)
+    uuid4()
+    aluno = Aluno(usuario_id=usuario_da('123'), curso_id='1', ativo=True)
     session.add(aluno)
     session.commit()
 
@@ -173,7 +174,6 @@ def test_delete_aluno_forbidden(client, session):
 def test_aluno_encontrado_pela_matricula_no_identidade(client, session):
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id='SEM-COPIA',
         curso_id='11111111-1111-1111-1111-111111111111',
         ativo=True,
     )
@@ -182,7 +182,7 @@ def test_aluno_encontrado_pela_matricula_no_identidade(client, session):
     session.refresh(aluno)
 
     with patch(
-        'turma.routers.alunos.buscar_usuario_por_matricula',
+        'turma.usuarios.buscar_usuario_por_matricula',
         return_value={'id': str(aluno.usuario_id)},
     ):
         resposta = client.get('/alunos/matricula_id/OUTRA-MATRICULA')
@@ -193,7 +193,7 @@ def test_aluno_encontrado_pela_matricula_no_identidade(client, session):
 
 def test_matricula_do_aluno_nao_pode_ser_alterada(client, session):
     uid = uuid4()
-    aluno = Aluno(usuario_id=uid, matricula_id='777', curso_id=CURSO_A, ativo=True)
+    aluno = Aluno(usuario_id=usuario_da('777'), curso_id=CURSO_A, ativo=True)
     session.add(aluno)
     session.commit()
 

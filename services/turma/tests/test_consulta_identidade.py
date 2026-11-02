@@ -3,9 +3,10 @@ from http import HTTPStatus
 from unittest.mock import patch
 from uuid import uuid4
 
+from tests.conftest import usuario_da
 from tests.test_modulos import como, criar_aluno, criar_professor, criar_turma
 from turma.models import Aluno as AlunoModelo
-from turma.models import UsuarioCache
+from turma.models import Professor, UsuarioCache
 from turma.usuarios import dados_usuario
 
 NOME_NO_IDENTIDADE = 'Rafael Oliveira'
@@ -47,7 +48,12 @@ def test_cache_evita_nova_consulta_dentro_da_validade(client, session):
         client.get(f'/turmas/{turma.id}')
         client.get(f'/turmas/{turma.id}')
 
-    assert consulta.call_count == 1
+    consultas_do_professor = [
+        chamada
+        for chamada in consulta.call_args_list
+        if chamada.args[0] == professor.usuario_id
+    ]
+    assert len(consultas_do_professor) == 1
 
 
 def test_sem_identidade_usa_ultimo_valor_em_cache(session):
@@ -84,7 +90,8 @@ def test_criar_aluno_envia_matricula_ao_identidade(client, session):
     como(uuid4(), e_admin=True)
 
     with patch(
-        'turma.routers.alunos.definir_matricula', return_value=True
+        'turma.usuarios.buscar_usuario_por_matricula',
+        return_value={'id': str(usuario_id), 'nome': 'Aluno', 'matricula': '2023777777'},
     ) as envio:
         resposta = client.post(
             '/alunos/',
@@ -97,7 +104,7 @@ def test_criar_aluno_envia_matricula_ao_identidade(client, session):
         )
 
     assert resposta.status_code == HTTPStatus.CREATED
-    envio.assert_called_once_with(usuario_id, '2023777777')
+    envio.assert_called_once_with('2023777777')
     assert session.query(AlunoModelo).filter_by(usuario_id=usuario_id).count() == 1
 
 
@@ -105,7 +112,7 @@ def test_criar_aluno_falha_se_identidade_nao_recebe_matricula(client, session):
     usuario_id = uuid4()
     como(uuid4(), e_admin=True)
 
-    with patch('turma.routers.alunos.definir_matricula', return_value=False):
+    with patch('turma.usuarios.buscar_usuario_por_matricula', return_value=None):
         resposta = client.post(
             '/alunos/',
             json={
@@ -118,3 +125,23 @@ def test_criar_aluno_falha_se_identidade_nao_recebe_matricula(client, session):
 
     assert resposta.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert session.query(AlunoModelo).filter_by(usuario_id=usuario_id).count() == 0
+
+
+def test_turmas_do_aluno_trazem_matricula_de_cada_professor_com_cache_frio(
+    client, session
+):
+    professor_a = Professor(usuario_id=usuario_da('P7001'), ativo=True)
+    professor_b = Professor(usuario_id=usuario_da('P7002'), ativo=True)
+    session.add_all([professor_a, professor_b])
+    session.commit()
+    session.refresh(professor_a)
+    session.refresh(professor_b)
+    aluno = criar_aluno(session)
+    criar_turma(session, professor_a, [aluno])
+    criar_turma(session, professor_b, [aluno])
+    como(aluno.usuario_id)
+
+    resposta = client.get(f'/turmas/aluno/{aluno.id}')
+
+    matriculas = sorted(t['professor']['matricula_id'] for t in resposta.json()['turmas'])
+    assert matriculas == ['P7001', 'P7002']

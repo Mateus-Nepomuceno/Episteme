@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import pytest
 from fastapi.testclient import TestClient
@@ -59,11 +59,40 @@ def usuario_administrador():
     app.dependency_overrides.pop(get_current_user, None)
 
 
+REGISTRO_MATRICULAS = {}
+
+
+def usuario_da(matricula):
+    usuario_id = uuid5(NAMESPACE_URL, f'matricula:{matricula}')
+    REGISTRO_MATRICULAS[str(usuario_id)] = matricula
+    return usuario_id
+
+
+def _usuario_da_matricula(matricula):
+    return {
+        'id': str(usuario_da(matricula)),
+        'nome': f'Usuário {matricula}',
+        'matricula': matricula,
+    }
+
+
+def _usuario_por_id(usuario_id):
+    matricula = REGISTRO_MATRICULAS.get(str(usuario_id))
+    if matricula is None:
+        return None
+    return {
+        'id': str(usuario_id),
+        'nome': f'Usuário {matricula}',
+        'matricula': matricula,
+    }
+
+
 @pytest.fixture(autouse=True)
-def identidade_matricula():
+def identidade_isolado():
     with patch(
-        'turma.routers.alunos.definir_matricula', return_value=True
+        'turma.usuarios.buscar_usuario', side_effect=_usuario_por_id
     ), patch(
-        'turma.routers.professores.definir_matricula', return_value=True
+        'turma.usuarios.buscar_usuario_por_matricula',
+        side_effect=_usuario_da_matricula,
     ):
         yield

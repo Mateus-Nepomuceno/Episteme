@@ -17,8 +17,7 @@ class FiltroPaginacao(BaseModel):
 
 
 class AlunoCreate(BaseModel):
-    usuario_id: UUID
-    matricula_id: str
+    matricula_id: str = Field(min_length=1)
     curso_id: str
     ativo: bool = True
 
@@ -38,7 +37,7 @@ class AlunoCreate(BaseModel):
 class AlunoPublic(BaseModel):
     id: UUID
     usuario_id: UUID
-    matricula_id: str
+    matricula_id: str | None = None
     curso_id: str
     ativo: bool
     model_config = ConfigDict(from_attributes=True)
@@ -49,8 +48,7 @@ class AlunoList(BaseModel):
 
 
 class ProfessorCreate(BaseModel):
-    usuario_id: UUID
-    matricula_id: str
+    matricula_id: str = Field(min_length=1)
     ativo: bool = True
     nome: str | None = None
 
@@ -58,7 +56,7 @@ class ProfessorCreate(BaseModel):
 class ProfessorPublic(BaseModel):
     id: UUID
     usuario_id: UUID
-    matricula_id: str
+    matricula_id: str | None = None
     ativo: bool
     nome: str | None = None
     model_config = ConfigDict(from_attributes=True)
@@ -103,13 +101,13 @@ class HorarioTurmaPublic(BaseModel):
 
 class ProfessorTurmaPublic(BaseModel):
     id: UUID
-    matricula_id: str
+    matricula_id: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProfessorComNomePublic(BaseModel):
     id: UUID
-    matricula_id: str
+    matricula_id: str | None = None
     nome: str | None = None
     model_config = ConfigDict(from_attributes=True)
 

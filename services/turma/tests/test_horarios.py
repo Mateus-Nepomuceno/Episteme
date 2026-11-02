@@ -2,14 +2,15 @@ from datetime import time
 from http import HTTPStatus
 from uuid import uuid4
 
+from tests.conftest import usuario_da
 from turma.app import app
 from turma.models import Aluno, DiaSemana, Horario, Professor, Turma
 from turma.security import CurrentUser, get_current_user
 
 
 def test_create_horario_forbidden(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123')
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -43,8 +44,8 @@ def test_create_horario_forbidden(client, session):
 
 
 def test_create_horario_conflict_horario(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123')
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -79,7 +80,7 @@ def test_create_horario_conflict_horario(client, session):
 
 def test_create_horario_conflict_turma(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123')
+    professor = Professor(usuario_id=usuario_da('123'),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -124,8 +125,8 @@ def test_create_horario_conflict_turma(client, session):
 
 
 def test_create_horario_conflict_professor(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123')
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -180,10 +181,10 @@ def test_create_horario_conflict_professor(client, session):
 
 
 def test_create_horario_conflict_local(client, session):
-    uid1 = uuid4()
-    uid2 = uuid4()
-    professor1 = Professor(usuario_id=uid1, matricula_id='123')
-    professor2 = Professor(usuario_id=uid2, matricula_id='456')
+    uuid4()
+    uuid4()
+    professor1 = Professor(usuario_id=usuario_da('123'),)
+    professor2 = Professor(usuario_id=usuario_da('456'),)
     session.add(professor1)
     session.add(professor2)
     session.commit()
@@ -240,8 +241,8 @@ def test_create_horario_conflict_local(client, session):
 
 
 def test_create_horario(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123')
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -283,8 +284,8 @@ def test_read_horarios_aluno_not_found(client):
 
 
 def test_read_horarios_aluno_forbidden(client, session):
-    aluno = Aluno(usuario_id=uuid4(), matricula_id='1', curso_id='1', ativo=True)
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    aluno = Aluno(usuario_id=uuid4(), curso_id='1', ativo=True)
+    professor = Professor(usuario_id=uuid4(),)
     session.add(aluno)
     session.add(professor)
     session.commit()
@@ -322,8 +323,8 @@ def test_read_horarios_aluno_forbidden(client, session):
 
 
 def test_read_horarios_aluno(client, session):
-    aluno = Aluno(usuario_id=uuid4(), matricula_id='1', curso_id='1', ativo=True)
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    aluno = Aluno(usuario_id=uuid4(), curso_id='1', ativo=True)
+    professor = Professor(usuario_id=uuid4(),)
     session.add(aluno)
     session.add(professor)
     session.commit()
@@ -368,7 +369,7 @@ def test_read_horarios_professor_not_found(client):
 
 
 def test_read_horarios_professor_forbidden(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -403,7 +404,7 @@ def test_read_horarios_professor_forbidden(client, session):
 
 
 def test_read_horarios_professor(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -455,7 +456,7 @@ def test_update_horario_not_found(client):
 
 
 def test_update_horario_forbidden(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -501,7 +502,7 @@ def test_update_horario_forbidden(client, session):
 
 
 def test_update_horario_conflict_horario(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -547,7 +548,7 @@ def test_update_horario_conflict_horario(client, session):
 
 
 def test_update_horario_conflict_turma(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -605,7 +606,7 @@ def test_update_horario_conflict_turma(client, session):
 
 
 def test_update_horario_conflict_professor(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -673,8 +674,8 @@ def test_update_horario_conflict_professor(client, session):
 
 
 def test_update_horario_conflict_local(client, session):
-    professor1 = Professor(usuario_id=uuid4(), matricula_id='123')
-    professor2 = Professor(usuario_id=uuid4(), matricula_id='456')
+    professor1 = Professor(usuario_id=uuid4(),)
+    professor2 = Professor(usuario_id=uuid4(),)
     session.add(professor1)
     session.add(professor2)
     session.commit()
@@ -744,7 +745,7 @@ def test_update_horario_conflict_local(client, session):
 
 
 def test_update_horario(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -798,7 +799,7 @@ def test_delete_horario_not_found(client):
 
 
 def test_delete_horario_forbidden(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -834,7 +835,7 @@ def test_delete_horario_forbidden(client, session):
 
 
 def test_delete_horario(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='123')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -870,7 +871,7 @@ def test_delete_horario(client, session):
 
 
 def test_update_horario_mantendo_o_mesmo_horario(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='777')
+    professor = Professor(usuario_id=uuid4(),)
     session.add(professor)
     session.commit()
     session.refresh(professor)

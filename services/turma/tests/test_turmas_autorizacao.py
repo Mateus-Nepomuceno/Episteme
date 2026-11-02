@@ -31,8 +31,8 @@ def como(usuario_id, e_admin=False):
 
 
 def cenario(session, com_aluno=True):
-    professor = Professor(usuario_id=uuid4(), matricula_id=f'P{uuid4().hex[:6]}', ativo=True)
-    aluno = Aluno(usuario_id=uuid4(), matricula_id=f'A{uuid4().hex[:6]}', curso_id=CURSO_ID, ativo=True)
+    professor = Professor(usuario_id=uuid4(), ativo=True)
+    aluno = Aluno(usuario_id=uuid4(), curso_id=CURSO_ID, ativo=True)
     session.add_all([professor, aluno])
     session.commit()
     session.refresh(professor)
