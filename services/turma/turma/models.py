@@ -22,7 +22,6 @@ class Aluno:
         primary_key=True, default=uuid4, init=False
     )
     usuario_id: Mapped[UUID] = mapped_column(unique=True)
-    matricula_id: Mapped[str]
     curso_id: Mapped[str]
 
     turmas: Mapped[list['Turma']] = relationship(
@@ -40,7 +39,6 @@ class Professor:
         primary_key=True, default=uuid4, init=False
     )
     usuario_id: Mapped[UUID] = mapped_column(unique=True)
-    matricula_id: Mapped[str]
 
     turmas: Mapped[list['Turma']] = relationship(
         back_populates='professor', default_factory=list

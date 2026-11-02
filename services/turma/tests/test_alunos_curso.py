@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from uuid import UUID, uuid4
 
+from tests.conftest import usuario_da
 from turma.academico_client import ServicoAcademicoIndisponivel
 from turma.app import app
 from turma.models import Aluno
@@ -55,7 +56,6 @@ def test_create_aluno_normaliza_curso_id_uuid(client, session):
 def test_update_aluno_recusa_curso_id_invalido(client, session):
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id='2026002',
         curso_id=CURSO_ID,
         ativo=True,
     )
@@ -131,7 +131,6 @@ def test_update_aluno_com_curso_inexistente_nao_altera_cadastro(
 ):
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id='2026003',
         curso_id=CURSO_ID,
         ativo=True,
     )
@@ -162,8 +161,7 @@ def test_update_aluno_com_curso_inexistente_nao_altera_cadastro(
 
 def test_update_aluno_com_curso_valido(client, session, curso_academico):
     aluno = Aluno(
-        usuario_id=uuid4(),
-        matricula_id='2026004',
+        usuario_id=usuario_da('2026004'),
         curso_id=CURSO_ID,
         ativo=True,
     )

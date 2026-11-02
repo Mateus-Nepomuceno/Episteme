@@ -48,17 +48,3 @@ def _consultar(caminho: str) -> dict | None:
     if resposta.status_code != STATUS_OK:
         return None
     return resposta.json()
-
-
-def definir_matricula(usuario_id: UUID, matricula: str) -> bool:
-    settings = Settings()
-    try:
-        resposta = httpx.put(
-            f'{settings.IDENTIDADE_API_URL}/internos/usuarios/{usuario_id}/matricula',
-            json={'matricula': matricula},
-            headers={'Authorization': f'Bearer {criar_token_servico()}'},
-            timeout=TEMPO_LIMITE_SEGUNDOS,
-        )
-    except httpx.RequestError:
-        return False
-    return resposta.status_code == STATUS_OK

@@ -38,7 +38,7 @@ from turma.security import (
     get_current_user,
     get_usuario_opcional,
 )
-from turma.usuarios import preencher_nome_professor
+from turma.usuarios import preencher_turmas
 
 router = APIRouter(prefix='/turmas', tags=['turmas'])
 
@@ -258,6 +258,7 @@ def read_turmas(
     current_user: Annotated[CurrentUser | None, Depends(get_usuario_opcional)],
 ):
     turmas = session.scalars(select(Turma).offset(filter.offset).limit(filter.limit)).all()
+    preencher_turmas(session, turmas)
     return {'turmas': [_turma_visivel(turma, current_user) for turma in turmas]}
 
 
@@ -298,6 +299,7 @@ def read_ofertas_turmas(
 
     pagina = turmas_filtradas[filter.offset : filter.offset + filter.limit]
 
+    preencher_turmas(session, pagina)
     return {'turmas': [_montar_oferta(turma) for turma in pagina]}
 
 
@@ -326,8 +328,7 @@ def read_turmas_aluno(
         .order_by(Turma.nome, Turma.id)
     ).all()
 
-    for turma in turmas:
-        preencher_nome_professor(session, turma)
+    preencher_turmas(session, turmas)
 
     return {'turmas': turmas}
 
@@ -343,7 +344,7 @@ def read_turma(
     if not turma:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Turma não encontrada')
 
-    preencher_nome_professor(session, turma)
+    preencher_turmas(session, [turma])
     return _turma_visivel(turma, current_user)
 
 

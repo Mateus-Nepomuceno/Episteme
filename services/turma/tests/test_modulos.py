@@ -18,7 +18,6 @@ def como(usuario_id, e_admin=False):
 def criar_aluno(session):
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id=f'A{uuid4().hex[:6]}',
         curso_id=CURSO_ID,
         ativo=True,
     )
@@ -29,9 +28,7 @@ def criar_aluno(session):
 
 
 def criar_professor(session):
-    professor = Professor(
-        usuario_id=uuid4(), matricula_id=f'P{uuid4().hex[:6]}', ativo=True
-    )
+    professor = Professor(usuario_id=uuid4(), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)

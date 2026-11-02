@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from uuid import uuid4
 
+from tests.conftest import usuario_da
 from turma.app import app
 from turma.models import Aluno, Professor
 from turma.security import CurrentUser, get_current_user
@@ -19,25 +20,26 @@ def sem_token():
 
 
 def criar_aluno(session):
+    matricula = f'M{uuid4().hex[:6]}'
     aluno = Aluno(
-        usuario_id=uuid4(),
-        matricula_id=f'M{uuid4().hex[:6]}',
+        usuario_id=usuario_da(matricula),
         curso_id=CURSO_ID,
         ativo=True,
     )
     session.add(aluno)
     session.commit()
     session.refresh(aluno)
+    aluno.matricula_id = matricula
     return aluno
 
 
 def criar_professor(session):
-    professor = Professor(
-        usuario_id=uuid4(), matricula_id=f'P{uuid4().hex[:6]}', ativo=True
-    )
+    matricula = f'P{uuid4().hex[:6]}'
+    professor = Professor(usuario_id=usuario_da(matricula), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
+    professor.matricula_id = matricula
     return professor
 
 

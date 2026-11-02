@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from uuid import UUID, uuid4
 
+from tests.conftest import usuario_da
 from turma.app import app
 from turma.models import Aluno, Professor, Turma
 from turma.security import CurrentUser, get_current_user, get_usuario_opcional
@@ -11,13 +12,13 @@ CAPACIDADE_NOVA = 45
 
 
 def test_create_turma(client, session):
-    uid_prof = uuid4()
-    uid_aluno1 = uuid4()
-    uid_aluno2 = uuid4()
+    uuid4()
+    uuid4()
+    uuid4()
 
-    professor = Professor(usuario_id=uid_prof, matricula_id='123', ativo=True)
-    aluno1 = Aluno(usuario_id=uid_aluno1, matricula_id='456', curso_id='1', ativo=True)
-    aluno2 = Aluno(usuario_id=uid_aluno2, matricula_id='789', curso_id='1', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
+    aluno1 = Aluno(usuario_id=usuario_da('456'), curso_id='1', ativo=True)
+    aluno2 = Aluno(usuario_id=usuario_da('789'), curso_id='1', ativo=True)
     session.add(professor)
     session.add(aluno1)
     session.add(aluno2)
@@ -49,9 +50,9 @@ def test_create_turma_sem_prof(client, session):
 
 
 def test_create_turma_erro_alunos(client, session):
-    uid_prof = uuid4()
+    uuid4()
 
-    professor = Professor(usuario_id=uid_prof, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -69,9 +70,9 @@ def test_create_turma_erro_alunos(client, session):
 
 
 def test_create_turma_conflict(client, session):
-    uid = uuid4()
+    uuid4()
 
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -101,8 +102,8 @@ def test_read_turmas(client):
 
 
 def test_read_turma(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -131,7 +132,7 @@ def test_read_turma_not_found(client):
 
 def test_update_turma(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -172,8 +173,8 @@ def test_update_turma_not_found(client):
 
 
 def test_update_turma_forbidden(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -202,7 +203,7 @@ def test_update_turma_forbidden(client, session):
 
 def test_update_turma_erro_alunos(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -231,7 +232,7 @@ def test_update_turma_erro_alunos(client, session):
 
 def test_delete_turma(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -265,8 +266,8 @@ def test_delete_turma_not_found(client):
 
 
 def test_delete_forbidden(client, session):
-    uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    uuid4()
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -347,7 +348,7 @@ def test_create_turma_periodo_letivo_com_formato_invalido(client, session):
 def test_create_turmas_do_mesmo_professor_com_nomes_diferentes(
     client, session
 ):
-    professor = Professor(usuario_id=uuid4(), matricula_id='777', ativo=True)
+    professor = Professor(usuario_id=uuid4(), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -366,7 +367,7 @@ def test_create_turmas_do_mesmo_professor_com_nomes_diferentes(
 
 
 def test_read_turma_expoe_professor_horarios_e_oferta(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='888', ativo=True)
+    professor = Professor(usuario_id=usuario_da('888'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -389,7 +390,7 @@ def test_read_turma_expoe_professor_horarios_e_oferta(client, session):
 
 def test_update_turma_persiste_novos_campos_de_oferta(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='123', ativo=True)
+    professor = Professor(usuario_id=usuario_da('123'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -467,7 +468,7 @@ def _usuario_como(usuario_id, e_admin=False):
 
 def test_create_turma_pelo_professor_responsavel(client, session):
     uid = uuid4()
-    professor = Professor(usuario_id=uid, matricula_id='555', ativo=True)
+    professor = Professor(usuario_id=usuario_da('555'), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -483,7 +484,7 @@ def test_create_turma_pelo_professor_responsavel(client, session):
 
 
 def test_create_turma_por_outro_professor_e_negado(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='556', ativo=True)
+    professor = Professor(usuario_id=uuid4(), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
@@ -514,10 +515,9 @@ def test_create_turma_sem_autenticacao(client, session):
 
 
 def _turma_com_aluno(session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='PV1', ativo=True)
+    professor = Professor(usuario_id=uuid4(), ativo=True)
     aluno = Aluno(
         usuario_id=uuid4(),
-        matricula_id='MATRICULA-PRIVADA',
         curso_id=CURSO_ID,
         ativo=True,
     )

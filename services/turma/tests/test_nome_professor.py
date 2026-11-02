@@ -8,7 +8,6 @@ from turma.models import Professor
 def test_turma_devolve_nome_do_professor_para_o_aluno(client, session):
     professor = Professor(
         usuario_id=uuid4(),
-        matricula_id='P000111',
         ativo=True,
         nome='Rafael Oliveira',
     )
@@ -27,7 +26,7 @@ def test_turma_devolve_nome_do_professor_para_o_aluno(client, session):
 
 
 def test_professor_sem_nome_devolve_nulo(client, session):
-    professor = Professor(usuario_id=uuid4(), matricula_id='P000222', ativo=True)
+    professor = Professor(usuario_id=uuid4(), ativo=True)
     session.add(professor)
     session.commit()
     session.refresh(professor)
