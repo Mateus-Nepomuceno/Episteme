@@ -16,6 +16,7 @@ class ComunicadoPublic(BaseModel):
     titulo: str
     resumo: str
     corpo: str
+    publicado: bool
     publicado_em: datetime
     model_config = ConfigDict(from_attributes=True)
 
