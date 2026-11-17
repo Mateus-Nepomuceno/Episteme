@@ -116,7 +116,7 @@ class ComunicadoPublic(BaseModel):
     titulo: str
     resumo: str
     corpo: str
-    publicado: bool = True
+    publicado: bool
     publicado_em: datetime
     inicio_em: datetime | None = None
     expira_em: datetime | None = None
